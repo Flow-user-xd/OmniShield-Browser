@@ -1,0 +1,669 @@
+[
+  {
+    "id": "prof-1785158071744",
+    "name": "Dell Alienware x16 R2 #396",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.113 Safari/537.36",
+    "resolution": {
+      "width": 2560,
+      "height": 1600,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 8,
+      "memoryGb": 16,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785158070192",
+    "name": "MSI Raider GE78 HX #669",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.113 Safari/537.36",
+    "resolution": {
+      "width": 2560,
+      "height": 1600,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 4,
+      "memoryGb": 6,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785158069374",
+    "name": "Lenovo Tab P12 Pro #878",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.141 Safari/537.36",
+    "resolution": {
+      "width": 1600,
+      "height": 2560,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 12,
+      "memoryGb": 16,
+      "webGlVendor": "Qualcomm",
+      "webGlRenderer": "Adreno (TM) 512",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785158068536",
+    "name": "iPhone 15 Pro #930",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.113 Safari/537.36",
+    "resolution": {
+      "width": 1179,
+      "height": 2556,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 12,
+      "memoryGb": 8,
+      "webGlVendor": "Apple Inc.",
+      "webGlRenderer": "Apple M2 Max",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785158067715",
+    "name": "Honor Pad X9 #618",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.113 Safari/537.36",
+    "resolution": {
+      "width": 1200,
+      "height": 2000,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 12,
+      "memoryGb": 6,
+      "webGlVendor": "Qualcomm",
+      "webGlRenderer": "Adreno (TM) 740",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785158066382",
+    "name": "iPad Air 5th Gen (M1) #383",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.122 Safari/537.36",
+    "resolution": {
+      "width": 1640,
+      "height": 2360,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 12,
+      "memoryGb": 8,
+      "webGlVendor": "Apple Inc.",
+      "webGlRenderer": "Apple M4 GPU",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785158065556",
+    "name": "Realme GT 5 Pro #935",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.113 Safari/537.36",
+    "resolution": {
+      "width": 1264,
+      "height": 2780,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 4,
+      "memoryGb": 8,
+      "webGlVendor": "Qualcomm",
+      "webGlRenderer": "Adreno (TM) 730",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785158064544",
+    "name": "OnePlus Open Foldable #859",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.127 Safari/537.36",
+    "resolution": {
+      "width": 2268,
+      "height": 2440,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 6,
+      "memoryGb": 8,
+      "webGlVendor": "Qualcomm",
+      "webGlRenderer": "Adreno (TM) 512",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785153946646",
+    "name": "HP Spectre x360 16 #853",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 3072,
+      "height": 1920,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 16,
+      "memoryGb": 16,
+      "webGlVendor": "Google Inc. (Intel)",
+      "webGlRenderer": "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785153945558",
+    "name": "OnePlus Nord 3 5G #134",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 1920,
+      "height": 1080,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 6,
+      "memoryGb": 8,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785153944526",
+    "name": "MacBook Air 15\" M2 #454",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 2880,
+      "height": 1864,
+      "dpr": 2
+    },
+    "hardware": {
+      "cpuCores": 16,
+      "memoryGb": 8,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785122693416",
+    "name": "iPad 10th Gen #888",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 1620,
+      "height": 2160,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 6,
+      "memoryGb": 6,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785122636524",
+    "name": "Acer Swift Go 14 #875",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 2880,
+      "height": 1800,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 8,
+      "memoryGb": 6,
+      "webGlVendor": "Google Inc. (Intel)",
+      "webGlRenderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785120799460",
+    "name": "Nokia T21 Tablet #183",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 1920,
+      "height": 1080,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 6,
+      "memoryGb": 12,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785120430460",
+    "name": "Nothing Phone (2) #103",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 1920,
+      "height": 1080,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 8,
+      "memoryGb": 6,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785120221055",
+    "name": "Asus TUF Gaming A15 #382",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 1920,
+      "height": 1080,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 10,
+      "memoryGb": 32,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1785119926072",
+    "name": "MacBook Air 15\" M3 #148",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 2880,
+      "height": 1864,
+      "dpr": 2
+    },
+    "hardware": {
+      "cpuCores": 8,
+      "memoryGb": 16,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    },
+    "pid": "Port 9200"
+  },
+  {
+    "id": "prof-1785118988955",
+    "name": "iPad Pro 12.9\" M2 #754",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36",
+    "resolution": {
+      "width": 2048,
+      "height": 2732,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 6,
+      "memoryGb": 8,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  }
+]

@@ -1,0 +1,684 @@
+import os
+import sys
+import json
+import time
+import re
+import hashlib
+import shutil
+import asyncio
+import subprocess
+import urllib.request
+import websockets
+
+PORTABLE_CHROMIUM = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'browser_core', 'chrome.exe')
+
+BROWSER_CANDIDATES = [
+    PORTABLE_CHROMIUM,
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+    r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\Application\brave.exe"),
+    r"C:\Program Files\Chromium\Application\chrome.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\Chromium\Application\chrome.exe"),
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+]
+
+CHROME_EXEC = None
+for b_path in BROWSER_CANDIDATES:
+    if os.path.exists(b_path):
+        CHROME_EXEC = b_path
+        break
+
+if not CHROME_EXEC:
+    CHROME_EXEC = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+PROFILES_DIR = os.path.join(os.path.expanduser('~'), 'OmniShieldProfiles')
+EXTENSION_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'omnishield_extension')
+os.makedirs(PROFILES_DIR, exist_ok=True)
+
+
+def compute_profile_fingerprint_seeds(profile_id):
+    """Compute unique fingerprint noise seeds from profile ID using SHA256."""
+    hash_val = int(hashlib.sha256(str(profile_id).encode('utf-8')).hexdigest(), 16)
+    return {
+        'canvasR': (hash_val % 200) + 1,              # 1-200
+        'canvasG': ((hash_val >> 8) % 200) + 1,       # 1-200
+        'canvasB': ((hash_val >> 16) % 200) + 1,      # 1-200
+        'canvasStride': ((hash_val >> 24) % 12) + 4,   # 4-15 (pixel stride, multiplied by 4 in inject.js)
+        'audioNoise': ((hash_val >> 32) % 900 + 100) / 10000000000.0,  # unique tiny float per profile
+    }
+
+
+def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, timezone_id="", width=1920, height=1080, useragent=""):
+    """
+    Create a per-profile copy of the OmniShield extension with unique config.js.
+    Returns the path to the per-profile extension directory.
+    """
+    ext_dir = os.path.join(user_data_dir, 'omnishield_ext')
+
+    if os.path.exists(ext_dir):
+        try:
+            shutil.rmtree(ext_dir)
+        except Exception:
+            pass
+
+    # Copy the base extension template
+    shutil.copytree(EXTENSION_TEMPLATE_DIR, ext_dir)
+
+    # Compute unique seeds for this profile
+    seeds = compute_profile_fingerprint_seeds(profile_id)
+
+    # Generate the per-profile config.js
+    config_content = f"""// OmniShield Profile Config - Auto-generated for: {profile_id}
+const OMNI_CFG = {{
+  profileId: {json.dumps(profile_id)},
+  userAgent: {json.dumps(useragent)},
+  width: {int(width)},
+  height: {int(height)},
+  canvasR: {seeds['canvasR']},
+  canvasG: {seeds['canvasG']},
+  canvasB: {seeds['canvasB']},
+  canvasStride: {seeds['canvasStride']},
+  webglVendor: {json.dumps(webgl_vendor)},
+  webglRenderer: {json.dumps(webgl_renderer)},
+  cpuCores: {int(cpu_cores)},
+  memoryGb: {int(memory_gb)},
+  audioNoise: {seeds['audioNoise']:.13f},
+  timezone: {json.dumps(timezone_id)}
+}};
+if (typeof self !== 'undefined') self.__OMNI_CONFIG = OMNI_CFG;
+if (typeof window !== 'undefined') window.__OMNI_CONFIG = OMNI_CFG;
+"""
+
+    config_path = os.path.join(ext_dir, 'config.js')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        f.write(config_content)
+
+    print(f"[Stealth Engine] Extension prepared for {profile_id}:", flush=True)
+    print(f"  Canvas noise: R={seeds['canvasR']}, G={seeds['canvasG']}, B={seeds['canvasB']}, stride={seeds['canvasStride']}", flush=True)
+    print(f"  WebGL: {webgl_vendor} / {webgl_renderer}", flush=True)
+    print(f"  Hardware: {cpu_cores} cores, {memory_gb}GB RAM", flush=True)
+    print(f"  Audio noise: {seeds['audioNoise']:.13f}", flush=True)
+    print(f"  Timezone: {timezone_id}", flush=True)
+
+    return ext_dir
+
+
+async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user="", proxy_pass="", profile_id="prof-1", timezone_id="America/New_York"):
+    """CDP fallback: Apply stealth overrides via Chrome DevTools Protocol websocket."""
+    ws_url = None
+    for attempt in range(30):  # 30 retries x 0.5s = 15s max wait
+        try:
+            res = urllib.request.urlopen(f'http://localhost:{port}/json', timeout=2)
+            pages = json.loads(res.read().decode())
+            page = next((p for p in pages if p.get('type') == 'page'), None)
+            if page and page.get('webSocketDebuggerUrl'):
+                ws_url = page.get('webSocketDebuggerUrl')
+                break
+        except Exception:
+            pass
+        await asyncio.sleep(0.5)
+
+    if not ws_url:
+        print(f"[Stealth Engine CDP] Warning: Could not connect to Chrome CDP on port {port} after 15s", flush=True)
+        print(f"[Stealth Engine CDP] Extension-based injection is still active (primary method)", flush=True)
+        return
+
+    print(f"[Stealth Engine CDP] WebSocket Connected: {ws_url}", flush=True)
+
+    seeds = compute_profile_fingerprint_seeds(profile_id)
+
+    # Build the CDP injection payload (serves as a secondary reinforcement of extension injection)
+    cdp_payload = f"""
+    (function() {{
+      // Screen resolution & color depth spoofing reinforcement
+      try {{
+        const targetW = {int(width)};
+        const targetH = {int(height)};
+        const screenDescriptors = {{
+          width: {{ get: function() {{ return targetW; }}, configurable: true, enumerable: true }},
+          height: {{ get: function() {{ return targetH; }}, configurable: true, enumerable: true }},
+          availWidth: {{ get: function() {{ return targetW; }}, configurable: true, enumerable: true }},
+          availHeight: {{ get: function() {{ return targetH - 40; }}, configurable: true, enumerable: true }},
+          colorDepth: {{ get: function() {{ return 24; }}, configurable: true, enumerable: true }},
+          pixelDepth: {{ get: function() {{ return 24; }}, configurable: true, enumerable: true }},
+          availLeft: {{ get: function() {{ return 0; }}, configurable: true, enumerable: true }},
+          availTop: {{ get: function() {{ return 0; }}, configurable: true, enumerable: true }}
+        }};
+        if (typeof Screen !== 'undefined' && Screen.prototype) {{
+          try {{ Object.defineProperties(Screen.prototype, screenDescriptors); }} catch(e) {{}}
+        }}
+        if (typeof window !== 'undefined' && window.screen) {{
+          try {{ Object.defineProperties(window.screen, screenDescriptors); }} catch(e) {{}}
+        }}
+        try {{
+          Object.defineProperty(window, 'devicePixelRatio', {{ get: () => 1, configurable: true }});
+          Object.defineProperty(window, 'outerWidth', {{ get: () => targetW, configurable: true }});
+          Object.defineProperty(window, 'outerHeight', {{ get: () => targetH - 40, configurable: true }});
+          Object.defineProperty(window, 'innerWidth', {{ get: () => targetW, configurable: true }});
+          Object.defineProperty(window, 'innerHeight', {{ get: () => targetH - 85, configurable: true }});
+        }} catch(e) {{}}
+      }} catch(e) {{}}
+
+      // Screen orientation reinforcement — real desktop Chrome always reports
+      // 'landscape-primary' regardless of claimed device. A portrait phone/
+      // tablet profile with the desktop's real orientation is an easy,
+      // commonly-checked tell, so this ties it to the claimed resolution.
+      try {{
+        const isPortrait = {int(height)} > {int(width)};
+        const orientType = isPortrait ? 'portrait-primary' : 'landscape-primary';
+        const orientAngle = isPortrait ? 0 : 90;
+        if (window.screen && window.screen.orientation) {{
+          try {{
+            Object.defineProperty(ScreenOrientation.prototype, 'type', {{ get: () => orientType, configurable: true }});
+            Object.defineProperty(ScreenOrientation.prototype, 'angle', {{ get: () => orientAngle, configurable: true }});
+          }} catch(e) {{}}
+          try {{
+            Object.defineProperty(window.screen.orientation, 'type', {{ get: () => orientType, configurable: true }});
+            Object.defineProperty(window.screen.orientation, 'angle', {{ get: () => orientAngle, configurable: true }});
+          }} catch(e) {{}}
+        }}
+      }} catch(e) {{}}
+
+      // Pointer/hover media-feature reinforcement — real desktop Chrome
+      // reports pointer:fine / hover:hover from actual detected input
+      // hardware, independent of any touch-emulation flag. Any site
+      // checking window.matchMedia('(pointer: coarse)') etc. sees straight
+      // through a mobile profile without this.
+      try {{
+        const wantsTouchProfile = {json.dumps('Android' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str)};
+        if (wantsTouchProfile && window.matchMedia) {{
+          const origMatchMedia = window.matchMedia.bind(window);
+          window.matchMedia = function(query) {{
+            const q = String(query).toLowerCase();
+            const result = origMatchMedia(query);
+            let forced = null;
+            if (q.includes('pointer: coarse') || q.includes('any-pointer: coarse')) forced = true;
+            else if (q.includes('pointer: fine') || q.includes('any-pointer: fine')) forced = false;
+            else if (q.includes('hover: none') || q.includes('any-hover: none')) forced = true;
+            else if (q.includes('hover: hover') || q.includes('any-hover: hover')) forced = false;
+            if (forced === null) return result;
+            try {{
+              return new Proxy(result, {{
+                get(target, prop) {{
+                  if (prop === 'matches') return forced;
+                  const val = target[prop];
+                  return typeof val === 'function' ? val.bind(target) : val;
+                }}
+              }});
+            }} catch(e) {{ return result; }}
+          }};
+        }}
+      }} catch(e) {{}}
+
+      // Hardware & Navigator spoofing reinforcement via CDP
+      try {{
+        const isMac = {json.dumps('Macintosh' in ua_str or 'Mac OS X' in ua_str)};
+        const isIOS = {json.dumps('iPhone' in ua_str or 'iPad' in ua_str)};
+        const isIPad = {json.dumps('iPad' in ua_str)};
+        const isAndroid = {json.dumps('Android' in ua_str)};
+        const isMobileUA = {json.dumps('Mobile' in ua_str)};
+        const platStr = isMac ? 'MacIntel' : (isIOS ? (isIPad ? 'iPad' : 'iPhone') : (isAndroid ? 'Linux aarch64' : 'Win32'));
+        const osName = isMac ? 'macOS' : (isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Windows'));
+        const isMobile = isIOS || isMobileUA;
+        const verStr = isMac ? '14.2.0' : (isIOS ? '17.2' : (isAndroid ? '14' : '10.0.0'));
+        const archStr = (isMac || isIOS || isAndroid) ? 'arm' : 'x86';
+        const modelStr = isIOS ? 'iPhone' : '';
+
+        const navMap = {{
+          platform: platStr,
+          hardwareConcurrency: {int(cpu_cores)},
+          deviceMemory: {int(memory_gb)},
+          userAgent: {json.dumps(ua_str)},
+          appVersion: {json.dumps(ua_str.replace('Mozilla/', ''))},
+          maxTouchPoints: (isAndroid || isIOS) ? 5 : 0,
+          pdfViewerEnabled: !(isAndroid || isIOS),
+          plugins: (isAndroid || isIOS) ? [] : [
+            {{ name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
+            {{ name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }}
+          ]
+        }};
+
+        if (typeof Navigator !== 'undefined' && Navigator.prototype) {{
+          for (const [p, v] of Object.entries(navMap)) {{
+            try {{ Object.defineProperty(Navigator.prototype, p, {{ get: () => v, configurable: true, enumerable: true }}); }} catch(e) {{}}
+          }}
+        }}
+        for (const [p, v] of Object.entries(navMap)) {{
+          try {{ Object.defineProperty(navigator, p, {{ get: () => v, configurable: true, enumerable: true }}); }} catch(e) {{}}
+        }}
+
+        const customUAData = {{
+          brands: [
+            {{ brand: 'Not/A)Brand', version: '8' }},
+            {{ brand: 'Chromium', version: '150' }},
+            {{ brand: 'Google Chrome', version: '150' }}
+          ],
+          mobile: isMobile,
+          platform: osName,
+          getHighEntropyValues: async () => ({{
+            architecture: archStr,
+            bitness: '64',
+            brands: [
+              {{ brand: 'Not/A)Brand', version: '8.0.0.0' }},
+              {{ brand: 'Chromium', version: '150.0.7871.128' }},
+              {{ brand: 'Google Chrome', version: '150.0.7871.128' }}
+            ],
+            mobile: isMobile,
+            model: modelStr,
+            platform: osName,
+            platformVersion: verStr,
+            uaFullVersion: '150.0.7871.128'
+          }})
+        }};
+
+        if (typeof NavigatorUAData !== 'undefined' && NavigatorUAData.prototype) {{
+          try {{
+            Object.defineProperty(NavigatorUAData.prototype, 'platform', {{ get: () => osName, configurable: true }});
+            Object.defineProperty(NavigatorUAData.prototype, 'mobile', {{ get: () => isMobile, configurable: true }});
+            NavigatorUAData.prototype.getHighEntropyValues = customUAData.getHighEntropyValues;
+          }} catch(e) {{}}
+        }}
+
+        try {{ Object.defineProperty(navigator, 'userAgentData', {{ get: () => customUAData, configurable: true }}); }} catch(e) {{}}
+      }} catch(e) {{}}
+
+      // WebGL spoofing reinforcement
+      try {{
+        const vendor = {json.dumps(webgl_vendor)};
+        const renderer = {json.dumps(webgl_renderer)};
+        const isMobileGPU = {json.dumps('Android' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str)};
+        const getParam = WebGLRenderingContext.prototype.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(param) {{
+          if (param === 37445) return vendor;
+          if (param === 37446) return renderer;
+          return getParam.apply(this, arguments);
+        }};
+        if (window.WebGL2RenderingContext) {{
+          const getParam2 = WebGL2RenderingContext.prototype.getParameter;
+          WebGL2RenderingContext.prototype.getParameter = function(param) {{
+            if (param === 37445) return vendor;
+            if (param === 37446) return renderer;
+            return getParam2.apply(this, arguments);
+          }};
+        }}
+
+        // Texture-compression support is a much harder tell than the vendor/
+        // renderer strings: real Windows GPUs (ANGLE/Direct3D) support
+        // S3TC/DXT; real mobile GPUs support ETC2/ASTC and essentially never
+        // S3TC. Claiming a mobile renderer string while still reporting
+        // desktop compression formats (or vice versa) is a direct giveaway
+        // regardless of what getParameter(37445/37446) says.
+        const DESKTOP_ONLY_EXT = ['WEBGL_compressed_texture_s3tc', 'WEBGL_compressed_texture_s3tc_srgb', 'EXT_texture_compression_bptc', 'EXT_texture_compression_rgtc'];
+        const MOBILE_ONLY_EXT = ['WEBGL_compressed_texture_etc', 'WEBGL_compressed_texture_etc1', 'WEBGL_compressed_texture_astc', 'WEBGL_compressed_texture_pvrtc'];
+
+        const patchExtensions = (proto) => {{
+          const origGetSupported = proto.getSupportedExtensions;
+          const origGetExtension = proto.getExtension;
+          if (origGetSupported) {{
+            const patchedGetSupported = function () {{
+              let list = origGetSupported.apply(this, arguments) || [];
+              list = isMobileGPU
+                ? list.filter((e) => !DESKTOP_ONLY_EXT.includes(e))
+                : list.filter((e) => !MOBILE_ONLY_EXT.includes(e));
+              return list;
+            }};
+            proto.getSupportedExtensions = patchedGetSupported;
+          }}
+          if (origGetExtension) {{
+            const patchedGetExtension = function (name) {{
+              if (isMobileGPU && DESKTOP_ONLY_EXT.includes(name)) return null;
+              if (!isMobileGPU && MOBILE_ONLY_EXT.includes(name)) return null;
+              return origGetExtension.apply(this, arguments);
+            }};
+            proto.getExtension = patchedGetExtension;
+          }}
+        }};
+        patchExtensions(WebGLRenderingContext.prototype);
+        if (window.WebGL2RenderingContext) patchExtensions(WebGL2RenderingContext.prototype);
+      }} catch(e) {{}}
+    }})();
+    """
+
+    try:
+        async with websockets.connect(ws_url, close_timeout=5) as ws:
+            # 1. Enable Page Agent
+            await ws.send(json.dumps({"id": 1, "method": "Page.enable"}))
+            await ws.recv()
+
+            # 2. Proxy Auth handling
+            if proxy_user and proxy_pass:
+                await ws.send(json.dumps({
+                    "id": 6,
+                    "method": "Fetch.enable",
+                    "params": { "handleAuthRequests": True }
+                }))
+                await ws.recv()
+
+                async def persistent_proxy_auth_loop():
+                    while True:
+                        try:
+                            msg = await ws.recv()
+                            data = json.loads(msg)
+                            if data.get('method') == 'Fetch.authRequired':
+                                req_id = data['params']['requestId']
+                                await ws.send(json.dumps({
+                                    "id": 7,
+                                    "method": "Fetch.continueWithAuth",
+                                    "params": {
+                                        "requestId": req_id,
+                                        "authChallengeResponse": {
+                                            "response": "ProvideCredentials",
+                                            "username": proxy_user,
+                                            "password": proxy_pass
+                                        }
+                                    }
+                                }))
+                        except Exception:
+                            break
+
+                asyncio.create_task(persistent_proxy_auth_loop())
+
+            # 3. Inject CDP reinforcement script for future navigations
+            await ws.send(json.dumps({
+                "id": 2,
+                "method": "Page.addScriptToEvaluateOnNewDocument",
+                "params": { "source": cdp_payload, "runImmediately": True }
+            }))
+            await ws.recv()
+
+            # 4. User-Agent & Client Hints Override
+            is_mac = 'Macintosh' in ua_str or 'Mac OS X' in ua_str
+            is_ios = 'iPhone' in ua_str or 'iPad' in ua_str
+            is_android = 'Android' in ua_str
+            is_mobile_ua = 'Mobile' in ua_str
+
+            if is_mac:
+                os_platform, platform_version, cdp_platform, arch, model = 'macOS', '14.2.0', 'MacIntel', 'x86', ''
+            elif is_ios:
+                os_platform, platform_version, cdp_platform, arch, model = 'iOS', '17.2', 'iPhone', 'arm', 'iPhone'
+            elif is_android:
+                ver_match = re.search(r'Android ([\d.]+)', ua_str)
+                model_match = re.search(r'Android [\d.]+;\s*([^;)]+)\)', ua_str)
+                os_platform = 'Android'
+                platform_version = ver_match.group(1) if ver_match else '10'
+                model = model_match.group(1).strip() if model_match else ''
+                cdp_platform, arch = 'Linux aarch64', 'arm'
+            else:
+                os_platform, platform_version, cdp_platform, arch, model = 'Windows', '10.0.0', 'Win32', 'x86', ''
+
+            is_mobile = is_ios or is_mobile_ua
+
+            await ws.send(json.dumps({
+                "id": 3,
+                "method": "Emulation.setUserAgentOverride",
+                "params": {
+                    "userAgent": ua_str,
+                    "acceptLanguage": "en-US,en;q=0.9",
+                    "platform": cdp_platform,
+                    "userAgentMetadata": {
+                        "brands": [
+                            {"brand": "Not/A)Brand", "version": "8"},
+                            {"brand": "Chromium", "version": "150"},
+                            {"brand": "Google Chrome", "version": "150"}
+                        ],
+                        "fullVersionList": [
+                            {"brand": "Not/A)Brand", "version": "8.0.0.0"},
+                            {"brand": "Chromium", "version": "150.0.7871.187"},
+                            {"brand": "Google Chrome", "version": "150.0.7871.187"}
+                        ],
+                        "fullVersion": "150.0.7871.187",
+                        "platform": os_platform,
+                        "platformVersion": platform_version,
+                        "architecture": arch,
+                        "model": model,
+                        "mobile": is_mobile,
+                        "bitness": "64"
+                    }
+                }
+            }))
+            await ws.recv()
+
+            # 5. Device metrics override (width, height, screenWidth, screenHeight, mobile flag)
+            await ws.send(json.dumps({
+                "id": 4,
+                "method": "Emulation.setDeviceMetricsOverride",
+                "params": {
+                    "width": width,
+                    "height": height,
+                    "deviceScaleFactor": 2 if (is_mac or is_ios) else 1,
+                    "mobile": is_mobile,
+                    "screenWidth": width,
+                    "screenHeight": height,
+                    "positionX": 0,
+                    "positionY": 0,
+                    "dontSetVisibleSize": False
+                }
+            }))
+            await ws.recv()
+
+            # 5b. Touch & Pointer Emulation (for mobile/tablet profiles)
+            if is_mobile or is_android or is_ios:
+                try:
+                    await ws.send(json.dumps({
+                        "id": 90,
+                        "method": "Emulation.setTouchEmulationEnabled",
+                        "params": { "enabled": True, "maxTouchPoints": 5 }
+                    }))
+                    await ws.recv()
+                    await ws.send(json.dumps({
+                        "id": 91,
+                        "method": "Emulation.setEmitTouchEventsForMouse",
+                        "params": { "enabled": True, "configuration": "mobile" }
+                    }))
+                    await ws.recv()
+                except Exception:
+                    pass
+
+            # 5c. Timezone Override via CDP (only when timezone_id is set for proxied profiles)
+            if timezone_id and timezone_id.strip():
+                await ws.send(json.dumps({
+                    "id": 8,
+                    "method": "Emulation.setTimezoneOverride",
+                    "params": { "timezoneId": timezone_id }
+                }))
+                await ws.recv()
+
+            # 6. Navigate to target URL (triggers extension + CDP scripts on fresh load)
+            await ws.send(json.dumps({
+                "id": 5,
+                "method": "Page.navigate",
+                "params": { "url": target_url }
+            }))
+            await ws.recv()
+
+            # 7. Bring window to front desktop focus
+            try:
+                await ws.send(json.dumps({
+                    "id": 99,
+                    "method": "Page.bringToFront"
+                }))
+                await ws.recv()
+            except Exception:
+                pass
+
+            print(f"[Stealth Engine CDP] Overrides applied successfully! ({webgl_vendor} / {webgl_renderer} / TZ={timezone_id})", flush=True)
+
+    except Exception as e:
+        print(f"[Stealth Engine CDP] Warning: {e}", flush=True)
+        print(f"[Stealth Engine CDP] Extension-based injection is still active (primary method)", flush=True)
+
+
+def sanitize_user_agent(ua, os_hint=""):
+    """
+    Ensures User-Agent uses Chromium/CriOS syntax instead of raw Safari syntax.
+    Safari-only User-Agents leak WebKit vs Blink V8 engine mismatches on WhatIsMyBrowser & CreepJS.
+    """
+    if not ua:
+        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36"
+
+    import re
+    ua = re.sub(r'Chrome/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'Chrome/150.0.7871.187', ua)
+    ua = re.sub(r'CriOS/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'CriOS/150.0.7871.187', ua)
+
+    if "Version/" in ua and "Safari/" in ua and "Chrome/" not in ua and "CriOS/" not in ua:
+        if "iPhone" in ua or "iPad" in ua or "iOS" in os_hint or "iPhone" in os_hint or "iPad" in os_hint:
+            ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) CriOS/150.0.7871.187 Mobile/15E148 Safari/537.36"
+        else:
+            ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36"
+
+    return ua
+
+
+def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str, port=9222, url="https://browserleaks.com/canvas", webgl_vendor="Google Inc. (NVIDIA)", webgl_renderer="ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", cpu_cores=8, memory_gb=16, proxy_user="", proxy_pass="", timezone_id="America/New_York"):
+    useragent = sanitize_user_agent(useragent, name)
+    print(f"[Stealth Engine] launch_stealth_profile called for: {name} (proxy={bool(proxy_str)}, tz={timezone_id})", flush=True)
+
+    safe_name = "".join(c if c.isalnum() else "_" for c in name).lower()
+    user_data_dir = os.path.join(PROFILES_DIR, f"{profile_id}_{safe_name}")
+    os.makedirs(user_data_dir, exist_ok=True)
+
+    # Clean up old SingletonLock if leftover from previous crashed Chrome instance
+    lockfile = os.path.join(user_data_dir, 'SingletonLock')
+    if os.path.exists(lockfile) or os.path.islink(lockfile):
+        try:
+            os.remove(lockfile)
+        except Exception:
+            pass
+
+    # Prepare per-profile extension with unique fingerprint config
+    ext_dir = prepare_profile_extension(
+        profile_id=profile_id,
+        user_data_dir=user_data_dir,
+        webgl_vendor=webgl_vendor,
+        webgl_renderer=webgl_renderer,
+        cpu_cores=cpu_cores,
+        memory_gb=memory_gb,
+        timezone_id=timezone_id,
+        width=width,
+        height=height,
+        useragent=useragent
+    )
+
+    # Build Chrome flags
+    import random
+    if port == 9222:
+        port = random.randint(9200, 9500)
+
+    chrome_args = [
+        CHROME_EXEC,
+        f'--user-data-dir={user_data_dir}',
+        f'--remote-debugging-port={port}',
+        f'--window-size={width},{height}',
+        f'--load-extension={ext_dir}',
+        f'--disable-extensions-except={ext_dir}',
+        '--new-window',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-background-networking',
+        '--no-sandbox',
+        '--test-type',
+        '--remote-allow-origins=*',
+    ]
+
+    if useragent:
+        chrome_args.append(f'--user-agent={useragent}')
+
+    active_bridge = None
+    if proxy_str:
+        chrome_args.append('--force-webrtc-ip-handling-policy=disable_non_proxied_udp')
+        try:
+            from proxy_bridge import start_local_proxy_tunnel
+            ptype = 'SOCKS5' if 'socks' in proxy_str.lower() else 'HTTP'
+            clean_str = proxy_str.split('://')[-1]
+            host_parts = clean_str.split(':')
+            px_ip = host_parts[0]
+            px_port = host_parts[1]
+
+            active_bridge, local_px_port = start_local_proxy_tunnel(ptype, px_ip, px_port, proxy_user, proxy_pass)
+            chrome_args.append(f'--proxy-server=http://127.0.0.1:{local_px_port}')
+            print(f"[Stealth Engine] Proxy Bridge active: 127.0.0.1:{local_px_port} -> {ptype} {px_ip}:{px_port}", flush=True)
+        except Exception as e:
+            print(f"[Stealth Engine] Proxy Bridge error, falling back to direct: {e}", flush=True)
+            chrome_args.append(f'--proxy-server={proxy_str}')
+    else:
+        chrome_args.append('--no-proxy-server')
+
+    chrome_args.append('about:blank')
+
+    print(f"[Stealth Engine] Launching Chrome executable directly: {CHROME_EXEC} (port={port})...", flush=True)
+    # Use DETACHED_PROCESS on Windows so Chrome gets its own visible GUI window
+    # instead of inheriting the console session from the batch file
+    if sys.platform == 'win32':
+        proc = subprocess.Popen(chrome_args, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32
+            def enum_windows_cb(hwnd, _):
+                if user32.IsWindowVisible(hwnd):
+                    pid_out = ctypes.c_ulong()
+                    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_out))
+                    if pid_out.value == proc.pid:
+                        user32.ShowWindow(hwnd, 9)
+                        user32.SetForegroundWindow(hwnd)
+                        return False
+                return True
+            cb_func = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)(enum_windows_cb)
+            user32.EnumWindows(cb_func, 0)
+        except Exception:
+            pass
+    else:
+        proc = subprocess.Popen(chrome_args)
+
+    # Apply CDP stealth overrides as a secondary reinforcement
+    print(f"[Stealth Engine] Waiting for CDP connection on port {port} (extension already active)...", flush=True)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id))
+    except Exception as e:
+        print(f"[Stealth Engine CDP Error] {e}", flush=True)
+        print(f"[Stealth Engine] Extension-based fingerprint protection is still active.", flush=True)
+    finally:
+        try:
+            loop.close()
+        except Exception:
+            pass
+
+    return proc.pid, port, active_bridge
+
+if __name__ == '__main__':
+    # Default launcher execution
+    profile_type = sys.argv[1] if len(sys.argv) > 1 else 'mac'
+
+    if profile_type == 'mobile' or profile_type == 'ios':
+        launch_stealth_profile(
+            profile_id="prof_mobile_stealth",
+            name="iPhone 15 Mobile Profile",
+            width=390,
+            height=844,
+            useragent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/605.1.15",
+            proxy_str="",
+            port=9230,
+            url="https://browserleaks.com/canvas",
+            webgl_vendor="Apple Inc.",
+            webgl_renderer="Apple GPU",
+            cpu_cores=6,
+            memory_gb=8
+        )
+    else:
+        launch_stealth_profile(
+            profile_id="prof_mac_stealth",
+            name="MacBook Pro Stealth Profile",
+            width=2560,
+            height=1440,
+            useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            proxy_str="",
+            port=9231,
+            url="https://browserleaks.com/canvas",
+            webgl_vendor="Apple Inc.",
+            webgl_renderer="Apple M2",
+            cpu_cores=8,
+            memory_gb=16
+        )

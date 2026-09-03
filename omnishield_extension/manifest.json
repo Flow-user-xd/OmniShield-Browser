@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "OmniShield Anti-Detect Fingerprint Engine",
+  "version": "2.0.0",
+  "description": "Per-profile unique fingerprint spoofing: Canvas, WebGL, AudioContext, Hardware, Platform.",
+  "permissions": [
+    "scripting",
+    "storage",
+    "tabs",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["config.js", "inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
