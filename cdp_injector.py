@@ -1,8 +1,10 @@
 import json
 import time
 import urllib.request
-import sys
-import websocket # if websocket-client installed
+try:
+    import websocket # if websocket-client installed
+except ImportError:
+    websocket = None
 
 # Using standard urllib / websocket protocol to inject CDP overrides into Chrome
 def inject_cdp_overrides(port, os_type='macOS'):

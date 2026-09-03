@@ -76,3 +76,101 @@ chrome.declarativeNetRequest.updateDynamicRules({
   removeRuleIds: [1],
   addRules: headerRules
 });
+
+// =========================================================================
+// OmniShield Smart Omnibox Search Engine Resolver
+// =========================================================================
+// In Ungoogled Chromium, address bar search queries without a scheme default
+// to 'http://{searchTerms}/', causing queries to fail with DNS errors.
+// This resolver intercepts omnibox search queries and routes them seamlessly
+// to Google Search, restoring the natural, normal browser search experience.
+
+const KNOWN_TLDS = new Set([
+  'com', 'org', 'net', 'edu', 'gov', 'mil', 'int',
+  'io', 'co', 'ai', 'dev', 'app', 'xyz', 'info', 'biz', 'me', 'tv', 'cc',
+  'in', 'uk', 'us', 'ca', 'au', 'de', 'fr', 'jp', 'cn', 'ru', 'br', 'nl',
+  'se', 'no', 'fi', 'es', 'it', 'ch', 'at', 'dk', 'pl', 'cz', 'eu', 'asia',
+  'online', 'site', 'tech', 'store', 'shop', 'blog', 'live', 'club', 'space',
+  'pro', 'guru', 'link', 'click', 'cloud', 'vip', 'fun', 'top', 'work',
+  'agency', 'group', 'company', 'email', 'world', 'today', 'news', 'life',
+  'sh', 'gg', 'to', 'ly', 'so', 'fm', 'ms', 'is', 'pw', 'ws', 'im', 'icu'
+]);
+
+function isOmniboxSearchQuery(urlStr) {
+  if (!urlStr || !urlStr.startsWith('http://')) return { isSearch: false };
+
+  try {
+    const parsed = new URL(urlStr);
+    const host = parsed.hostname;
+
+    // 1. Never redirect localhost or local network IPs
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.local') || host.endsWith('.internal')) {
+      return { isSearch: false };
+    }
+    // IPv4 check
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) {
+      return { isSearch: false };
+    }
+    // Explicit port specified (e.g. localhost:8080 or 192.168.1.1:8080)
+    if (parsed.port && parsed.port !== '80') {
+      return { isSearch: false };
+    }
+
+    // Only inspect requests with empty or root path
+    if (parsed.pathname !== '/' && parsed.pathname !== '') {
+      return { isSearch: false };
+    }
+
+    const rawHostAndPath = urlStr.replace(/^http:\/\//, '').replace(/\/$/, '');
+    const decoded = decodeURIComponent(rawHostAndPath).trim();
+
+    // 2. Spaces or search punctuation -> definitely a search query
+    if (decoded.includes(' ') || decoded.includes('+') || decoded.includes('?') || decoded.includes('!') || decoded.includes('"') || decoded.includes("'")) {
+      return { isSearch: true, query: decoded };
+    }
+
+    // 3. Single word without any dot -> definitely a search query (e.g. "cats", "weather", "cricket", "youtube")
+    if (!host.includes('.')) {
+      return { isSearch: true, query: decoded };
+    }
+
+    // 4. Contains dot: check if last part is a recognized TLD
+    const parts = host.split('.');
+    const tld = parts[parts.length - 1].toLowerCase();
+    if (!KNOWN_TLDS.has(tld)) {
+      return { isSearch: true, query: decoded };
+    }
+
+    // Otherwise it's a real website with a valid TLD
+    return { isSearch: false };
+  } catch (err) {
+    const raw = urlStr.replace(/^http:\/\//, '').replace(/\/$/, '');
+    return { isSearch: true, query: decodeURIComponent(raw) };
+  }
+}
+
+if (chrome.webNavigation && chrome.webNavigation.onBeforeNavigate) {
+  chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+    if (details.frameId !== 0) return; // Top-level tab navigation only
+    const { isSearch, query } = isOmniboxSearchQuery(details.url);
+    if (isSearch && query) {
+      console.log('[OmniShield] Seamlessly resolving search query to Google:', query);
+      const targetUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      chrome.tabs.update(details.tabId, { url: targetUrl });
+    }
+  });
+
+  chrome.webNavigation.onErrorOccurred.addListener((details) => {
+    if (details.frameId !== 0) return;
+    if (details.url && details.url.startsWith('http://')) {
+      if (details.error === 'net::ERR_NAME_NOT_RESOLVED') {
+        const raw = details.url.replace(/^http:\/\//, '').replace(/\/$/, '');
+        const query = decodeURIComponent(raw).trim();
+        if (query && query !== 'localhost' && query !== '127.0.0.1' && !/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(query)) {
+          console.log('[OmniShield] DNS resolution fallback to Google Search:', query);
+          chrome.tabs.update(details.tabId, { url: `https://www.google.com/search?q=${encodeURIComponent(query)}` });
+        }
+      }
+    }
+  });
+}

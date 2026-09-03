@@ -1,227 +1,401 @@
+// OmniShield Desktop Device & Hardware Specifications Catalog
+// Streamlined for 100% Anti-Detection Stealth (Windows 11/10, macOS, Linux Desktop)
 const WEBGL_CATALOG = [
-  // Qualcomm Adreno
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 750", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 740", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 735", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 730", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 710", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 685", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 660", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 650", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 644", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 642L", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 640", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 619", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 618", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 610", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 512", category: "Mobile" }, // Redmi Note 7
-
-  // ARM Mali
-  { vendor: "ARM", renderer: "Mali-G715 Immortalis-G715", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G720 Immortalis-G720", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G710 MC10", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G78 MP14", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G77 MP11", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G68 MC4", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G57 MC2", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G52 MC2", category: "Mobile" },
-
-  // Apple Metal / GPU
-  { vendor: "Apple Inc.", renderer: "Apple GPU", category: "Mobile" },
-  { vendor: "Apple Inc.", renderer: "Apple M1", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M1 Pro", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M1 Max", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M1 Ultra", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M2", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M2 Pro", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M2 Max", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M2 Ultra", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M3", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M3 Pro", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M3 Max", category: "Mac" },
-  { vendor: "Apple Inc.", renderer: "Apple M4 GPU", category: "Mac" },
-
-  // NVIDIA
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 SUPER Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-
-  // Intel
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) Arc(TM) A770 Graphics Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-
-  // AMD
-  { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon RX 6800 XT Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-
-  // Additional 30 WebGL Vendors & Renderers
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 732", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 705", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 690", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 643", category: "Mobile" },
-  { vendor: "Qualcomm", renderer: "Adreno (TM) 612", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G720 MC12", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G715 MC10", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G610 MC6", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G57 MC3", category: "Mobile" },
-  { vendor: "ARM", renderer: "Mali-G51 MP4", category: "Mobile" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3050 Laptop Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA GeForce GTX 1080 Ti Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA RTX A4000 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (NVIDIA)", renderer: "ANGLE (NVIDIA, NVIDIA RTX A6000 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) Arc(TM) A750 Graphics Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) Iris(R) Plus Graphics 655 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) HD Graphics 620 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (Intel)", renderer: "ANGLE (Intel, Intel(R) HD Graphics 530 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon RX 7800 XT Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon RX 6600 Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Google Inc. (AMD)", renderer: "ANGLE (AMD, AMD Radeon Vega 8 Graphics Direct3D11 vs_5_0 ps_5_0)", category: "Desktop" },
-  { vendor: "Samsung", renderer: "Samsung Xclipse 940", category: "Mobile" },
-  { vendor: "Samsung", renderer: "Samsung Xclipse 920", category: "Mobile" },
-  { vendor: "MediaTek", renderer: "Mali-G720 Immortalis-G720", category: "Mobile" },
-  { vendor: "MediaTek", renderer: "Mali-G77 MC9", category: "Mobile" },
-  { vendor: "Imagination Technologies", renderer: "PowerVR Rogue GX6250", category: "Mobile" },
-  { vendor: "Imagination Technologies", renderer: "PowerVR GE8320", category: "Mobile" },
-  { vendor: "Microsoft", renderer: "Microsoft Basic Render Driver", category: "Desktop" },
-  { vendor: "Apple Inc.", renderer: "Apple M3 Ultra", category: "Mac" }
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 SUPER Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Ti Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3050 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (NVIDIA)",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (Intel)",
+    "renderer": "ANGLE (Intel, Intel(R) Arc(TM) A770 Graphics Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (Intel)",
+    "renderer": "ANGLE (Intel, Intel(R) Arc(TM) A750 Graphics Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (Intel)",
+    "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (Intel)",
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (Intel)",
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics 730 Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon RX 7800 XT Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon RX 7700 XT Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon RX 6800 XT Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0)",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M4 Max",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M4 Pro",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M3 Max",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M3 Pro",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M3",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M2 Max",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M2 Pro",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M1 Max",
+    "category": "Desktop"
+  },
+  {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple M1 Pro",
+    "category": "Desktop"
+  }
 ];
 
 const DEVICE_PRESETS = [
-  // ==========================================
-  // 📱 40 GENUINE PHONES
-  // ==========================================
-  { id: "redmi_note_7", name: "Redmi Note 7", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2340 }, cpuCores: 8, memoryGb: 4, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 512", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "redmi_note_12_pro", name: "Redmi Note 12 Pro 5G", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2400 }, cpuCores: 8, memoryGb: 8, webGlVendor: "ARM", webGlRenderer: "Mali-G68 MC4", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "redmi_note_13_pro_plus", name: "Redmi Note 13 Pro+", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1220, height: 2712 }, cpuCores: 8, memoryGb: 12, webGlVendor: "ARM", webGlRenderer: "Mali-G610 MC6", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_s24_ultra", name: "Samsung Galaxy S24 Ultra", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3120 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 750", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_s24_plus", name: "Samsung Galaxy S24+", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3120 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 750", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_s23_fe", name: "Samsung Galaxy S23 FE", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2340 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 730", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_a54", name: "Samsung Galaxy A54 5G", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2340 }, cpuCores: 8, memoryGb: 8, webGlVendor: "ARM", webGlRenderer: "Mali-G68", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_a34", name: "Samsung Galaxy A34 5G", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2340 }, cpuCores: 8, memoryGb: 6, webGlVendor: "ARM", webGlRenderer: "Mali-G68 MC4", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_z_fold_5", name: "Samsung Galaxy Z Fold 5", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1812, height: 2176 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 740", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_z_flip_5", name: "Samsung Galaxy Z Flip 5", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2640 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 740", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_15_pro_max", name: "iPhone 15 Pro Max", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1290, height: 2796 }, cpuCores: 6, memoryGb: 8, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_15_pro", name: "iPhone 15 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1179, height: 2556 }, cpuCores: 6, memoryGb: 8, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_15_plus", name: "iPhone 15 Plus", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1290, height: 2796 }, cpuCores: 6, memoryGb: 6, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_14_pro", name: "iPhone 14 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1179, height: 2556 }, cpuCores: 6, memoryGb: 6, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_14_plus", name: "iPhone 14 Plus", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1284, height: 2778 }, cpuCores: 6, memoryGb: 6, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_13_promax", name: "iPhone 13 Pro Max", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1284, height: 2778 }, cpuCores: 6, memoryGb: 6, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_13_mini", name: "iPhone 13 Mini", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2340 }, cpuCores: 6, memoryGb: 4, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "iphone_se_3", name: "iPhone SE 2022", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 750, height: 1334 }, cpuCores: 6, memoryGb: 4, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "pixel_8_pro", name: "Google Pixel 8 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3120 }, cpuCores: 9, memoryGb: 12, webGlVendor: "ARM", webGlRenderer: "Mali-G715 Immortalis-G715", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "pixel_8", name: "Google Pixel 8", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2400 }, cpuCores: 9, memoryGb: 8, webGlVendor: "ARM", webGlRenderer: "Mali-G715 Immortalis-G715", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "pixel_7_pro", name: "Google Pixel 7 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3120 }, cpuCores: 8, memoryGb: 12, webGlVendor: "ARM", webGlRenderer: "Mali-G710 MC10", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "pixel_7a", name: "Google Pixel 7a", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2400 }, cpuCores: 8, memoryGb: 8, webGlVendor: "ARM", webGlRenderer: "Mali-G710 MC10", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "pixel_6a", name: "Google Pixel 6a", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2400 }, cpuCores: 8, memoryGb: 6, webGlVendor: "ARM", webGlRenderer: "Mali-G78 MP14", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "oneplus_12", name: "OnePlus 12", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3216 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 750", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "oneplus_12r", name: "OnePlus 12R", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1264, height: 2780 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 740", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "oneplus_open", name: "OnePlus Open Foldable", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 2268, height: 2440 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 740", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "oneplus_nord_3", name: "OnePlus Nord 3 5G", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1240, height: 2772 }, cpuCores: 8, memoryGb: 16, webGlVendor: "ARM", webGlRenderer: "Mali-G710 MC10", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "xiaomi_14_ultra", name: "Xiaomi 14 Ultra", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3200 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 750", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "xiaomi_13_ultra", name: "Xiaomi 13 Ultra", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3200 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 740", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "xiaomi_13t_pro", name: "Xiaomi 13T Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1220, height: 2712 }, cpuCores: 8, memoryGb: 12, webGlVendor: "ARM", webGlRenderer: "Mali-G715 Immortalis-G715", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "poco_x5_pro", name: "Poco X5 Pro 5G", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2400 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 642L", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "poco_f5_pro", name: "Poco F5 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 3200 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 730", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "realme_gt_5", name: "Realme GT 5 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1264, height: 2780 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 750", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "realme_12_pro_plus", name: "Realme 12 Pro+ 5G", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2412 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 710", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "vivo_x100_pro", name: "Vivo X100 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1260, height: 2800 }, cpuCores: 8, memoryGb: 16, webGlVendor: "ARM", webGlRenderer: "Mali-G720 Immortalis-G720", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "vivo_v30_pro", name: "Vivo V30 Pro", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1260, height: 2800 }, cpuCores: 8, memoryGb: 12, webGlVendor: "ARM", webGlRenderer: "Mali-G77 MC9", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "motorola_edge_50_ultra", name: "Motorola Edge 50 Ultra", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1220, height: 2712 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 735", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "motorola_razr_50", name: "Motorola Razr 50 Ultra", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2640 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 735", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "nothing_phone_2", name: "Nothing Phone (2)", category: "Phones", os: "Windows 11", platform: "Win32", resolution: { width: 1080, height: 2412 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 730", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-
-  // ==========================================
-  // 📱 35 GENUINE TABLETS
-  // ==========================================
-  { id: "ipad_pro_13_m4", name: "iPad Pro 13\" M4", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 2064, height: 2752 }, cpuCores: 10, memoryGb: 16, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M4 GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "ipad_pro_12_9", name: "iPad Pro 12.9\" M2", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 2048, height: 2732 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M2 GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "ipad_pro_11_m4", name: "iPad Pro 11\" M4", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1668, height: 2420 }, cpuCores: 9, memoryGb: 16, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M4 GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "ipad_air_13_m2", name: "iPad Air 13\" M2", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 2048, height: 2732 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M2 GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "ipad_air_5", name: "iPad Air 5th Gen (M1)", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1640, height: 2360 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M1 GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "ipad_10th_gen", name: "iPad 10th Gen", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1620, height: 2160 }, cpuCores: 6, memoryGb: 4, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "ipad_mini_6", name: "iPad Mini 6th Gen", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1488, height: 2266 }, cpuCores: 6, memoryGb: 4, webGlVendor: "Apple Inc.", webGlRenderer: "Apple GPU", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_tab_s9_ultra", name: "Samsung Galaxy Tab S9 Ultra", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1848, height: 2960 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 740", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_tab_s9_plus", name: "Samsung Galaxy Tab S9+", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1752, height: 2800 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 740", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_tab_s8_ultra", name: "Samsung Galaxy Tab S8 Ultra", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1848, height: 2960 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 730", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_tab_s9_fe", name: "Samsung Galaxy Tab S9 FE", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 2304 }, cpuCores: 8, memoryGb: 8, webGlVendor: "ARM", webGlRenderer: "Mali-G68", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_tab_a9_plus", name: "Samsung Galaxy Tab A9+", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 1920 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 619", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "samsung_tab_active_5", name: "Samsung Galaxy Tab Active 5", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 1920 }, cpuCores: 8, memoryGb: 6, webGlVendor: "ARM", webGlRenderer: "Mali-G68", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "xiaomi_pad_6_max", name: "Xiaomi Pad 6 Max 14", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1800, height: 2880 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 730", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "xiaomi_pad_6_pro", name: "Xiaomi Pad 6 Pro", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1800, height: 2880 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 730", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "xiaomi_pad_6", name: "Xiaomi Pad 6", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1800, height: 2880 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 650", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "redmi_pad_se", name: "Redmi Pad SE", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 1920 }, cpuCores: 8, memoryGb: 6, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 610", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_tab_extreme", name: "Lenovo Tab Extreme", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1876, height: 3000 }, cpuCores: 8, memoryGb: 12, webGlVendor: "ARM", webGlRenderer: "Mali-G710 MC10", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_tab_p12_pro", name: "Lenovo Tab P12 Pro", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1600, height: 2560 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 650", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_legion_tab", name: "Lenovo Legion Y700 Gaming Tab", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1600, height: 2560 }, cpuCores: 8, memoryGb: 12, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 730", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_tab_m11", name: "Lenovo Tab M11", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 1920 }, cpuCores: 8, memoryGb: 4, webGlVendor: "ARM", webGlRenderer: "Mali-G52", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "oneplus_pad", name: "OnePlus Pad", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 2000, height: 2800 }, cpuCores: 8, memoryGb: 12, webGlVendor: "ARM", webGlRenderer: "Mali-G710 MC10", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "oneplus_pad_go", name: "OnePlus Pad Go", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1720, height: 2408 }, cpuCores: 8, memoryGb: 8, webGlVendor: "ARM", webGlRenderer: "Mali-G57 MC2", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "surface_pro_10", name: "Surface Pro 10 for Business", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 2880 }, cpuCores: 12, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "surface_pro_9_tab", name: "Surface Pro 9 (Tablet Mode)", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 2880 }, cpuCores: 10, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "surface_laptop_go_3", name: "Surface Laptop Go 3", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1536, height: 1024 }, cpuCores: 10, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "surface_go_3", name: "Surface Go 3", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1280, height: 1920 }, cpuCores: 4, memoryGb: 8, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) UHD Graphics 615 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "google_pixel_tablet", name: "Google Pixel Tablet", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1600, height: 2560 }, cpuCores: 8, memoryGb: 8, webGlVendor: "ARM", webGlRenderer: "Mali-G710 MC10", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "realme_pad_2", name: "Realme Pad 2", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 2000 }, cpuCores: 8, memoryGb: 6, webGlVendor: "ARM", webGlRenderer: "Mali-G57 MC2", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "honor_pad_9", name: "Honor Pad 9", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1600, height: 2560 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 710", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "honor_pad_x9", name: "Honor Pad X9", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 2000 }, cpuCores: 8, memoryGb: 4, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 685", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "huawei_matepad_13_2", name: "Huawei MatePad Pro 13.2", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 2880 }, cpuCores: 12, memoryGb: 16, webGlVendor: "ARM", webGlRenderer: "Maleoon 910", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "huawei_matepad_11_5", name: "Huawei MatePad 11.5", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1440, height: 2200 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Qualcomm", webGlRenderer: "Adreno (TM) 644", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "amazon_fire_max_11", name: "Amazon Fire Max 11", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 2000 }, cpuCores: 8, memoryGb: 4, webGlVendor: "ARM", webGlRenderer: "Mali-G57 MC2", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "nokia_t21", name: "Nokia T21 Tablet", category: "Tablets", os: "Windows 11", platform: "Win32", resolution: { width: 1200, height: 2000 }, cpuCores: 8, memoryGb: 4, webGlVendor: "ARM", webGlRenderer: "Mali-G57", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-
-  // ==========================================
-  // 💻 35 GENUINE LAPTOPS & DESKTOPS
-  // ==========================================
-  { id: "macbook_pro_16_m3", name: "MacBook Pro 16\" M3 Max", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3456, height: 2234 }, cpuCores: 16, memoryGb: 64, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M3 Max", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "macbook_pro_14_m3", name: "MacBook Pro 14\" M3 Pro", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3024, height: 1964 }, cpuCores: 12, memoryGb: 36, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M3 Pro", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "macbook_air_15_m3", name: "MacBook Air 15\" M3", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2880, height: 1864 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M3", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "macbook_air_15_m2", name: "MacBook Air 15\" M2", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2880, height: 1864 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M2", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "macbook_air_13_m1", name: "MacBook Air 13\" M1", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 8, memoryGb: 8, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M1", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "mac_mini_m2_pro", name: "Mac Mini M2 Pro", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3840, height: 2160 }, cpuCores: 12, memoryGb: 32, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M2 Pro", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "imac_24_m3", name: "iMac 24\" M3", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 4480, height: 2520 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M3", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "mac_studio_m2_ultra", name: "Mac Studio M2 Ultra", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 5120, height: 2880 }, cpuCores: 24, memoryGb: 64, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M2 Ultra", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "mac_studio_m1_ultra", name: "Mac Studio M1 Ultra", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 5120, height: 2880 }, cpuCores: 20, memoryGb: 64, webGlVendor: "Apple Inc.", webGlRenderer: "Apple M1 Ultra", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "custom_rtx_4090_rig", name: "Custom Gaming PC (RTX 4090)", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1440 }, cpuCores: 16, memoryGb: 64, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "custom_rtx_4080_rig", name: "Custom Gaming PC (RTX 4080)", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3840, height: 2160 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "custom_rtx_4070_super", name: "Custom PC (RTX 4070 SUPER)", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1440 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 SUPER Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "custom_rtx_3060_pc", name: "Custom Workstation (RTX 3060)", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 1080 }, cpuCores: 12, memoryGb: 16, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "dell_xps_16", name: "Dell XPS 16 (RTX 4070)", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3840, height: 2400 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "dell_xps_15_rtx4060", name: "Dell XPS 15 (RTX 4060)", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 1200 }, cpuCores: 14, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "dell_alienware_m18", name: "Dell Alienware m18 R2", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 16, memoryGb: 64, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "dell_alienware_x16", name: "Dell Alienware x16 R2", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_thinkpad_x1", name: "Lenovo ThinkPad X1 Carbon", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 1200 }, cpuCores: 12, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_thinkpad_p1", name: "Lenovo ThinkPad P1 Gen 6", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 14, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_legion_pro_7i", name: "Lenovo Legion Pro 7i", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "lenovo_yoga_pro_9i", name: "Lenovo Yoga Pro 9i", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3072, height: 1920 }, cpuCores: 14, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "asus_rog_strix_scar", name: "Asus ROG Strix SCAR 18", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 16, memoryGb: 64, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "asus_rog_zephyrus_g16", name: "Asus ROG Zephyrus G16", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "asus_tuf_gaming_a15", name: "Asus TUF Gaming A15", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 1080 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "asus_zenbook_14", name: "Asus Zenbook 14 OLED", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2880, height: 1800 }, cpuCores: 14, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "hp_spectre_x360", name: "HP Spectre x360 16", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3072, height: 1920 }, cpuCores: 14, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "hp_envy_x360", name: "HP Envy x360 15", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 1080 }, cpuCores: 12, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "hp_omen_16", name: "HP Omen 16 Gaming Laptop", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1440 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "hp_victus_16", name: "HP Victus 16", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 1920, height: 1080 }, cpuCores: 8, memoryGb: 16, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "acer_predator_16", name: "Acer Predator Helios 16", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "acer_swift_go_14", name: "Acer Swift Go 14", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2880, height: 1800 }, cpuCores: 14, memoryGb: 16, webGlVendor: "Google Inc. (Intel)", webGlRenderer: "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "razer_blade_16", name: "Razer Blade 16", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 3840, height: 2400 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "razer_blade_14", name: "Razer Blade 14", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 8, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" },
-  { id: "msi_raider_ge78", name: "MSI Raider GE78 HX", category: "Desktops", os: "Windows 11", platform: "Win32", resolution: { width: 2560, height: 1600 }, cpuCores: 16, memoryGb: 32, webGlVendor: "Google Inc. (NVIDIA)", webGlRenderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)", useragent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36" }
+  {
+    "id": "dell_xps_15",
+    "name": "Dell XPS 15 9530",
+    "category": "Laptops",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "cpuCores": 14,
+    "memoryGb": 32,
+    "webGlVendor": "Google Inc. (NVIDIA)",
+    "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "lenovo_thinkpad_x1",
+    "name": "Lenovo ThinkPad X1 Carbon Gen 12",
+    "category": "Laptops",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 1920,
+      "height": 1200
+    },
+    "cpuCores": 12,
+    "memoryGb": 32,
+    "webGlVendor": "Google Inc. (Intel)",
+    "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "hp_spectre_x360",
+    "name": "HP Spectre x360 16",
+    "category": "Laptops",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 2560,
+      "height": 1600
+    },
+    "cpuCores": 16,
+    "memoryGb": 32,
+    "webGlVendor": "Google Inc. (Intel)",
+    "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "surface_laptop_6",
+    "name": "Microsoft Surface Laptop 6",
+    "category": "Laptops",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 2256,
+      "height": 1504
+    },
+    "cpuCores": 12,
+    "memoryGb": 16,
+    "webGlVendor": "Google Inc. (Intel)",
+    "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "asus_zenbook_14",
+    "name": "ASUS Zenbook 14 OLED",
+    "category": "Laptops",
+    "os": "Windows 10",
+    "platform": "Win32",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "cpuCores": 8,
+    "memoryGb": 16,
+    "webGlVendor": "Google Inc. (Intel)",
+    "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "alienware_x16_r2",
+    "name": "Alienware x16 R2 Gaming Rig",
+    "category": "Gaming & Workstations",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 2560,
+      "height": 1600
+    },
+    "cpuCores": 16,
+    "memoryGb": 64,
+    "webGlVendor": "Google Inc. (NVIDIA)",
+    "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "asus_rog_strix_g16",
+    "name": "ASUS ROG Strix G16",
+    "category": "Gaming & Workstations",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "cpuCores": 14,
+    "memoryGb": 32,
+    "webGlVendor": "Google Inc. (NVIDIA)",
+    "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "razer_blade_16",
+    "name": "Razer Blade 16 Studio Edition",
+    "category": "Gaming & Workstations",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 2560,
+      "height": 1600
+    },
+    "cpuCores": 24,
+    "memoryGb": 64,
+    "webGlVendor": "Google Inc. (NVIDIA)",
+    "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "custom_amd_workstation",
+    "name": "Custom AMD Ryzen Workstation",
+    "category": "Gaming & Workstations",
+    "os": "Windows 11",
+    "platform": "Win32",
+    "resolution": {
+      "width": 2560,
+      "height": 1440
+    },
+    "cpuCores": 16,
+    "memoryGb": 64,
+    "webGlVendor": "Google Inc. (AMD)",
+    "webGlRenderer": "ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "dell_optiplex_7000",
+    "name": "Dell OptiPlex 7000 Corporate PC",
+    "category": "Gaming & Workstations",
+    "os": "Windows 10",
+    "platform": "Win32",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "cpuCores": 8,
+    "memoryGb": 16,
+    "webGlVendor": "Google Inc. (Intel)",
+    "webGlRenderer": "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "macbook_pro_16_m3",
+    "name": "MacBook Pro 16\" (M3 Max)",
+    "category": "Mac",
+    "os": "macOS Sonoma",
+    "platform": "MacIntel",
+    "resolution": {
+      "width": 2560,
+      "height": 1440
+    },
+    "cpuCores": 16,
+    "memoryGb": 64,
+    "webGlVendor": "Apple Inc.",
+    "webGlRenderer": "Apple M3 Max",
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "macbook_air_15_m3",
+    "name": "MacBook Air 15\" (M3)",
+    "category": "Mac",
+    "os": "macOS Sonoma",
+    "platform": "MacIntel",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "cpuCores": 8,
+    "memoryGb": 16,
+    "webGlVendor": "Apple Inc.",
+    "webGlRenderer": "Apple M3",
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "mac_studio_m2",
+    "name": "Mac Studio (M2 Ultra)",
+    "category": "Mac",
+    "os": "macOS Sonoma",
+    "platform": "MacIntel",
+    "resolution": {
+      "width": 2560,
+      "height": 1440
+    },
+    "cpuCores": 24,
+    "memoryGb": 128,
+    "webGlVendor": "Apple Inc.",
+    "webGlRenderer": "Apple M2 Max",
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "mac_mini_m2",
+    "name": "Mac mini (M2 Pro)",
+    "category": "Mac",
+    "os": "macOS Sonoma",
+    "platform": "MacIntel",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "cpuCores": 12,
+    "memoryGb": 32,
+    "webGlVendor": "Apple Inc.",
+    "webGlRenderer": "Apple M2 Pro",
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  },
+  {
+    "id": "thinkpad_p16_linux",
+    "name": "Lenovo ThinkPad P16 Linux",
+    "category": "Linux Workstations",
+    "os": "Linux Ubuntu",
+    "platform": "Linux x86_64",
+    "resolution": {
+      "width": 1920,
+      "height": 1200
+    },
+    "cpuCores": 16,
+    "memoryGb": 32,
+    "webGlVendor": "Google Inc. (NVIDIA)",
+    "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
+    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+  }
 ];
 
-if (typeof window !== 'undefined') {
-  window.WEBGL_CATALOG = WEBGL_CATALOG;
-  window.DEVICE_PRESETS = DEVICE_PRESETS;
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { WEBGL_CATALOG, DEVICE_PRESETS };
 }

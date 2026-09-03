@@ -7,6 +7,7 @@
     "scripting",
     "storage",
     "tabs",
+    "webNavigation",
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess"
   ],
@@ -21,7 +22,10 @@
       "matches": ["<all_urls>"],
       "js": ["config.js", "inject.js"],
       "run_at": "document_start",
-      "world": "MAIN"
+      "world": "MAIN",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     }
   ]
 }

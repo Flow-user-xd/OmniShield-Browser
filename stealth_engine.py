@@ -8,7 +8,10 @@ import shutil
 import asyncio
 import subprocess
 import urllib.request
-import websockets
+try:
+    import websockets
+except ImportError:
+    websockets = None
 
 PORTABLE_CHROMIUM = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'browser_core', 'chrome.exe')
 
@@ -125,9 +128,16 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         print(f"[Stealth Engine CDP] Extension-based injection is still active (primary method)", flush=True)
         return
 
+    if not websockets:
+        print(f"[Stealth Engine CDP] websockets module not installed, skipping secondary CDP injection. Extension-based injection is active.", flush=True)
+        return
+
     print(f"[Stealth Engine CDP] WebSocket Connected: {ws_url}", flush=True)
 
     seeds = compute_profile_fingerprint_seeds(profile_id)
+    chrome_m_cdp = re.search(r'(?:Chrome|CriOS)/(\d+)\.([\d.]+)', ua_str)
+    c_major = chrome_m_cdp.group(1) if chrome_m_cdp else '131'
+    c_full = f"{c_major}.{chrome_m_cdp.group(2)}" if chrome_m_cdp else '131.0.6778.265'
 
     # Build the CDP injection payload (serves as a secondary reinforcement of extension injection)
     cdp_payload = f"""
@@ -212,76 +222,186 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         }}
       }} catch(e) {{}}
 
-      // Hardware & Navigator spoofing reinforcement via CDP
+      // Hardware & Navigator spoofing reinforcement via CDP (Prototype Only, Anti-Deception)
       try {{
+        const nativeFnToString = Function.prototype.toString;
+        const nativeMap = new WeakMap();
+
+        function makeNative(fn, name) {{
+          if (name) {{
+            try {{ Object.defineProperty(fn, 'name', {{ value: name, configurable: true }}); }} catch(e) {{}}
+          }}
+          nativeMap.set(fn, name || (fn.name || ''));
+          return fn;
+        }}
+
+        try {{
+          const patchedToString = function() {{
+            if (nativeMap.has(this)) {{
+              const n = nativeMap.get(this);
+              return `function ${{n}}() {{ [native code] }}`;
+            }}
+            return nativeFnToString.call(this);
+          }};
+          makeNative(patchedToString, 'toString');
+          Function.prototype.toString = patchedToString;
+        }} catch(e) {{}}
+
+        // Clean any own properties on navigator to ensure navigator.hasOwnProperty(p) === false
+        const propsToClean = [
+          'webdriver', 'platform', 'hardwareConcurrency', 'deviceMemory',
+          'languages', 'userAgent', 'appVersion', 'maxTouchPoints',
+          'pdfViewerEnabled', 'userAgentData', 'plugins', 'mimeTypes', 'getBattery'
+        ];
+        for (const p of propsToClean) {{
+          try {{ if (navigator.hasOwnProperty(p)) delete navigator[p]; }} catch(e) {{}}
+        }}
+
         const isMac = {json.dumps('Macintosh' in ua_str or 'Mac OS X' in ua_str)};
         const isIOS = {json.dumps('iPhone' in ua_str or 'iPad' in ua_str)};
         const isIPad = {json.dumps('iPad' in ua_str)};
         const isAndroid = {json.dumps('Android' in ua_str)};
         const isMobileUA = {json.dumps('Mobile' in ua_str)};
-        const platStr = isMac ? 'MacIntel' : (isIOS ? (isIPad ? 'iPad' : 'iPhone') : (isAndroid ? 'Linux aarch64' : 'Win32'));
+        const platStr = isMac ? 'MacIntel' : (isIOS ? (isIPad ? 'iPad' : 'iPhone') : (isAndroid ? 'Linux armv8l' : 'Win32'));
         const osName = isMac ? 'macOS' : (isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Windows'));
         const isMobile = isIOS || isMobileUA;
         const verStr = isMac ? '14.2.0' : (isIOS ? '17.2' : (isAndroid ? '14' : '10.0.0'));
         const archStr = (isMac || isIOS || isAndroid) ? 'arm' : 'x86';
         const modelStr = isIOS ? 'iPhone' : '';
 
-        const navMap = {{
-          platform: platStr,
-          hardwareConcurrency: {int(cpu_cores)},
-          deviceMemory: {int(memory_gb)},
-          userAgent: {json.dumps(ua_str)},
-          appVersion: {json.dumps(ua_str.replace('Mozilla/', ''))},
-          maxTouchPoints: (isAndroid || isIOS) ? 5 : 0,
-          pdfViewerEnabled: !(isAndroid || isIOS),
-          plugins: (isAndroid || isIOS) ? [] : [
-            {{ name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
-            {{ name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }}
-          ]
-        }};
-
         if (typeof Navigator !== 'undefined' && Navigator.prototype) {{
-          for (const [p, v] of Object.entries(navMap)) {{
-            try {{ Object.defineProperty(Navigator.prototype, p, {{ get: () => v, configurable: true, enumerable: true }}); }} catch(e) {{}}
+          function defProtoGetter(prop, val) {{
+            const getter = function() {{ return val; }};
+            makeNative(getter, `get ${{prop}}`);
+            try {{
+              Object.defineProperty(Navigator.prototype, prop, {{
+                get: getter,
+                set: undefined,
+                enumerable: true,
+                configurable: true
+              }});
+            }} catch(e) {{}}
+          }}
+
+          defProtoGetter('platform', platStr);
+          defProtoGetter('hardwareConcurrency', {int(cpu_cores)});
+          defProtoGetter('deviceMemory', {int(memory_gb)});
+          defProtoGetter('languages', Object.freeze(['en-US', 'en']));
+          defProtoGetter('userAgent', {json.dumps(ua_str)});
+          defProtoGetter('appVersion', {json.dumps(ua_str.replace('Mozilla/', ''))});
+          defProtoGetter('maxTouchPoints', (isAndroid || isIOS) ? 5 : 0);
+          defProtoGetter('pdfViewerEnabled', !(isAndroid || isIOS));
+
+          // Native Plugins
+          function createPluginArray() {{
+            if (isAndroid || isIOS) {{
+              const arr = Object.create(PluginArray.prototype);
+              Object.defineProperty(arr, 'length', {{ value: 0 }});
+              arr.item = makeNative(function() {{ return null; }}, 'item');
+              arr.namedItem = makeNative(function() {{ return null; }}, 'namedItem');
+              arr.refresh = makeNative(function() {{}}, 'refresh');
+              Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'PluginArray' }});
+              return arr;
+            }}
+            const plugins = [
+              {{ name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
+              {{ name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
+              {{ name: 'Chromium PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
+              {{ name: 'Microsoft Edge PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
+              {{ name: 'WebKit built-in PDF', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }}
+            ];
+            const arr = Object.create(PluginArray.prototype);
+            plugins.forEach((p, idx) => {{
+              const pluginObj = Object.create(Plugin.prototype);
+              Object.defineProperty(pluginObj, 'name', {{ value: p.name, enumerable: true, configurable: true }});
+              Object.defineProperty(pluginObj, 'filename', {{ value: p.filename, enumerable: true, configurable: true }});
+              Object.defineProperty(pluginObj, 'description', {{ value: p.description, enumerable: true, configurable: true }});
+              Object.defineProperty(pluginObj, 'length', {{ value: 0, enumerable: true, configurable: true }});
+              Object.defineProperty(pluginObj, Symbol.toStringTag, {{ value: 'Plugin' }});
+              arr[idx] = pluginObj;
+              arr[p.name] = pluginObj;
+            }});
+            Object.defineProperty(arr, 'length', {{ value: plugins.length }});
+            arr.item = makeNative(function(i) {{ return this[i] || null; }}, 'item');
+            arr.namedItem = makeNative(function(name) {{ return this[name] || null; }}, 'namedItem');
+            arr.refresh = makeNative(function() {{}}, 'refresh');
+            Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'PluginArray' }});
+            return arr;
+          }}
+
+          defProtoGetter('plugins', createPluginArray());
+
+          // Native userAgentData
+          if (typeof NavigatorUAData !== 'undefined') {{
+            const brands = Object.freeze([
+              Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_major)} }}),
+              Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_major)} }}),
+              Object.freeze({{ brand: 'Not_A Brand', version: '24' }})
+            ]);
+            const highEntropy = {{
+              architecture: archStr,
+              bitness: '64',
+              brands: Object.freeze([
+                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
+                Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_full)} }}),
+                Object.freeze({{ brand: 'Not_A Brand', version: '24.0.0.0' }})
+              ]),
+              fullVersionList: Object.freeze([
+                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
+                Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_full)} }}),
+                Object.freeze({{ brand: 'Not_A Brand', version: '24.0.0.0' }})
+              ]),
+              mobile: isMobile,
+              model: modelStr,
+              platform: osName,
+              platformVersion: verStr,
+              uaFullVersion: {json.dumps(c_full)}
+            }};
+            const mockUAData = Object.create(NavigatorUAData.prototype);
+            Object.defineProperty(mockUAData, 'brands', {{ get: makeNative(() => brands, 'get brands'), enumerable: true }});
+            Object.defineProperty(mockUAData, 'mobile', {{ get: makeNative(() => isMobile, 'get mobile'), enumerable: true }});
+            Object.defineProperty(mockUAData, 'platform', {{ get: makeNative(() => osName, 'get platform'), enumerable: true }});
+            mockUAData.getHighEntropyValues = makeNative(async (hints = []) => {{
+              const res = {{}};
+              hints.forEach(h => {{ if (h in highEntropy) res[h] = highEntropy[h]; }});
+              res.brands = highEntropy.brands;
+              res.mobile = highEntropy.mobile;
+              res.platform = highEntropy.platform;
+              return res;
+            }}, 'getHighEntropyValues');
+            Object.defineProperty(mockUAData, Symbol.toStringTag, {{ value: 'NavigatorUAData' }});
+
+            defProtoGetter('userAgentData', mockUAData);
+          }}
+
+          // Native Battery API
+          if ('getBattery' in Navigator.prototype || 'getBattery' in navigator) {{
+            const mockBattery = {{
+              charging: true,
+              chargingTime: 0,
+              dischargingTime: Infinity,
+              level: 1,
+              onchargingchange: null,
+              onchargingtimechange: null,
+              ondischargingtimechange: null,
+              onlevelchange: null,
+              addEventListener: makeNative(function() {{}}, 'addEventListener'),
+              removeEventListener: makeNative(function() {{}}, 'removeEventListener'),
+              dispatchEvent: makeNative(function() {{ return true; }}, 'dispatchEvent'),
+              [Symbol.toStringTag]: 'BatteryManager'
+            }};
+            const getBatteryFn = function() {{ return Promise.resolve(mockBattery); }};
+            makeNative(getBatteryFn, 'getBattery');
+            try {{
+              Object.defineProperty(Navigator.prototype, 'getBattery', {{
+                value: getBatteryFn,
+                writable: true,
+                enumerable: true,
+                configurable: true
+              }});
+            }} catch(e) {{}}
           }}
         }}
-        for (const [p, v] of Object.entries(navMap)) {{
-          try {{ Object.defineProperty(navigator, p, {{ get: () => v, configurable: true, enumerable: true }}); }} catch(e) {{}}
-        }}
-
-        const customUAData = {{
-          brands: [
-            {{ brand: 'Not/A)Brand', version: '8' }},
-            {{ brand: 'Chromium', version: '150' }},
-            {{ brand: 'Google Chrome', version: '150' }}
-          ],
-          mobile: isMobile,
-          platform: osName,
-          getHighEntropyValues: async () => ({{
-            architecture: archStr,
-            bitness: '64',
-            brands: [
-              {{ brand: 'Not/A)Brand', version: '8.0.0.0' }},
-              {{ brand: 'Chromium', version: '150.0.7871.128' }},
-              {{ brand: 'Google Chrome', version: '150.0.7871.128' }}
-            ],
-            mobile: isMobile,
-            model: modelStr,
-            platform: osName,
-            platformVersion: verStr,
-            uaFullVersion: '150.0.7871.128'
-          }})
-        }};
-
-        if (typeof NavigatorUAData !== 'undefined' && NavigatorUAData.prototype) {{
-          try {{
-            Object.defineProperty(NavigatorUAData.prototype, 'platform', {{ get: () => osName, configurable: true }});
-            Object.defineProperty(NavigatorUAData.prototype, 'mobile', {{ get: () => isMobile, configurable: true }});
-            NavigatorUAData.prototype.getHighEntropyValues = customUAData.getHighEntropyValues;
-          }} catch(e) {{}}
-        }}
-
-        try {{ Object.defineProperty(navigator, 'userAgentData', {{ get: () => customUAData, configurable: true }}); }} catch(e) {{}}
       }} catch(e) {{}}
 
       // WebGL spoofing reinforcement
@@ -290,18 +410,25 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         const renderer = {json.dumps(webgl_renderer)};
         const isMobileGPU = {json.dumps('Android' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str)};
         const getParam = WebGLRenderingContext.prototype.getParameter;
-        WebGLRenderingContext.prototype.getParameter = function(param) {{
+        const patchedGetParam = function(param) {{
+          const res = getParam.apply(this, arguments);
           if (param === 37445) return vendor;
           if (param === 37446) return renderer;
-          return getParam.apply(this, arguments);
+          return res;
         }};
+        makeNative(patchedGetParam, 'getParameter');
+        WebGLRenderingContext.prototype.getParameter = patchedGetParam;
+
         if (window.WebGL2RenderingContext) {{
           const getParam2 = WebGL2RenderingContext.prototype.getParameter;
-          WebGL2RenderingContext.prototype.getParameter = function(param) {{
+          const patchedGetParam2 = function(param) {{
+            const res = getParam2.apply(this, arguments);
             if (param === 37445) return vendor;
             if (param === 37446) return renderer;
-            return getParam2.apply(this, arguments);
+            return res;
           }};
+          makeNative(patchedGetParam2, 'getParameter');
+          WebGL2RenderingContext.prototype.getParameter = patchedGetParam2;
         }}
 
         // Texture-compression support is a much harder tell than the vendor/
@@ -324,6 +451,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 : list.filter((e) => !MOBILE_ONLY_EXT.includes(e));
               return list;
             }};
+            makeNative(patchedGetSupported, 'getSupportedExtensions');
             proto.getSupportedExtensions = patchedGetSupported;
           }}
           if (origGetExtension) {{
@@ -332,11 +460,110 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               if (!isMobileGPU && MOBILE_ONLY_EXT.includes(name)) return null;
               return origGetExtension.apply(this, arguments);
             }};
+            makeNative(patchedGetExtension, 'getExtension');
             proto.getExtension = patchedGetExtension;
           }}
         }};
         patchExtensions(WebGLRenderingContext.prototype);
         if (window.WebGL2RenderingContext) patchExtensions(WebGL2RenderingContext.prototype);
+      }} catch(e) {{}}
+
+      // Canvas 2D & Iframe stealth noise (defeats iframe canvas bypass on BrowserLeaks, CreepJS)
+      try {{
+        const rShift = {seeds['canvasR']};
+        const gShift = {seeds['canvasG']};
+        const bShift = {seeds['canvasB']};
+        const pixelStride = {seeds['canvasStride']};
+
+        function applyPixelNoise(data) {{
+          if (!data || !data.length) return;
+          const step = Math.max(4, pixelStride * 4);
+          for (let i = 0; i < data.length; i += step) {{
+            if (data[i + 3] > 0) {{
+              data[i]     = (data[i]     + rShift) & 255;
+              data[i + 1] = (data[i + 1] + gShift) & 255;
+              data[i + 2] = (data[i + 2] + bShift) & 255;
+            }}
+          }}
+        }}
+
+        function hookCanvasWindow(targetWin) {{
+          if (!targetWin || targetWin.__omni_canvas_hooked) return;
+          try {{ targetWin.__omni_canvas_hooked = true; }} catch(e) {{}}
+          try {{
+            if (!targetWin.HTMLCanvasElement || !targetWin.CanvasRenderingContext2D) return;
+            const origToDataURL = targetWin.HTMLCanvasElement.prototype.toDataURL;
+            const origGetImageData = targetWin.CanvasRenderingContext2D.prototype.getImageData;
+            const origToBlob = targetWin.HTMLCanvasElement.prototype.toBlob;
+
+            targetWin.HTMLCanvasElement.prototype.toDataURL = function() {{
+              try {{
+                const ctx = this.getContext('2d');
+                if (ctx) {{
+                  const imgData = origGetImageData.call(ctx, 0, 0, this.width, this.height);
+                  if (imgData && imgData.data) {{
+                    applyPixelNoise(imgData.data);
+                    ctx.putImageData(imgData, 0, 0);
+                  }}
+                }}
+              }} catch (err) {{}}
+              return origToDataURL.apply(this, arguments);
+            }};
+
+            targetWin.CanvasRenderingContext2D.prototype.getImageData = function(x, y, w, h) {{
+              const res = origGetImageData.apply(this, arguments);
+              try {{
+                if (res && res.data) applyPixelNoise(res.data);
+              }} catch (e) {{}}
+              return res;
+            }};
+
+            targetWin.HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {{
+              try {{
+                const ctx = this.getContext('2d');
+                if (ctx) {{
+                  const imgData = origGetImageData.call(ctx, 0, 0, this.width, this.height);
+                  if (imgData && imgData.data) {{
+                    applyPixelNoise(imgData.data);
+                    ctx.putImageData(imgData, 0, 0);
+                  }}
+                }}
+              }} catch (err) {{}}
+              return origToBlob.call(this, callback, type, quality);
+            }};
+          }} catch (e) {{}}
+        }}
+
+        hookCanvasWindow(window);
+
+        try {{
+          const descWin = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');
+          const descDoc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentDocument');
+
+          if (descWin && descWin.get) {{
+            Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {{
+              get: function() {{
+                const w = descWin.get.call(this);
+                if (w) hookCanvasWindow(w);
+                return w;
+              }},
+              configurable: true,
+              enumerable: true
+            }});
+          }}
+
+          if (descDoc && descDoc.get) {{
+            Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {{
+              get: function() {{
+                const d = descDoc.get.call(this);
+                if (d && d.defaultView) hookCanvasWindow(d.defaultView);
+                return d;
+              }},
+              configurable: true,
+              enumerable: true
+            }});
+          }}
+        }} catch (e) {{}}
       }} catch(e) {{}}
     }})();
     """
@@ -404,39 +631,60 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 os_platform = 'Android'
                 platform_version = ver_match.group(1) if ver_match else '10'
                 model = model_match.group(1).strip() if model_match else ''
-                cdp_platform, arch = 'Linux aarch64', 'arm'
+                cdp_platform, arch = 'Linux armv8l', 'arm'
             else:
                 os_platform, platform_version, cdp_platform, arch, model = 'Windows', '10.0.0', 'Win32', 'x86', ''
 
             is_mobile = is_ios or is_mobile_ua
 
+            chrome_m = re.search(r'(?:Chrome|CriOS)/(\d+)\.([\d.]+)', ua_str)
+            chrome_major = chrome_m.group(1) if chrome_m else '150'
+            chrome_full = f"{chrome_major}.{chrome_m.group(2)}" if chrome_m else '150.0.7871.128'
+
+            # Build unified UA & Client Hints payload
+            ua_override_params = {
+                "userAgent": ua_str,
+                "acceptLanguage": "en-US,en;q=0.9",
+                "platform": cdp_platform,
+                "userAgentMetadata": {
+                    "brands": [
+                        {"brand": "Google Chrome", "version": chrome_major},
+                        {"brand": "Chromium", "version": chrome_major},
+                        {"brand": "Not_A Brand", "version": "24"}
+                    ],
+                    "fullVersionList": [
+                        {"brand": "Google Chrome", "version": chrome_full},
+                        {"brand": "Chromium", "version": chrome_full},
+                        {"brand": "Not_A Brand", "version": "24.0.0.0"}
+                    ],
+                    "fullVersion": chrome_full,
+                    "platform": os_platform,
+                    "platformVersion": platform_version,
+                    "architecture": arch,
+                    "model": model,
+                    "mobile": is_mobile,
+                    "bitness": "64"
+                }
+            }
+
+            # Apply Network-level override (forces native HTTP Sec-CH-UA-Platform headers over the wire)
+            try:
+                await ws.send(json.dumps({"id": 30, "method": "Network.enable"}))
+                await ws.recv()
+                await ws.send(json.dumps({
+                    "id": 31,
+                    "method": "Network.setUserAgentOverride",
+                    "params": ua_override_params
+                }))
+                await ws.recv()
+            except Exception:
+                pass
+
+            # Apply DOM-level Emulation override
             await ws.send(json.dumps({
                 "id": 3,
                 "method": "Emulation.setUserAgentOverride",
-                "params": {
-                    "userAgent": ua_str,
-                    "acceptLanguage": "en-US,en;q=0.9",
-                    "platform": cdp_platform,
-                    "userAgentMetadata": {
-                        "brands": [
-                            {"brand": "Not/A)Brand", "version": "8"},
-                            {"brand": "Chromium", "version": "150"},
-                            {"brand": "Google Chrome", "version": "150"}
-                        ],
-                        "fullVersionList": [
-                            {"brand": "Not/A)Brand", "version": "8.0.0.0"},
-                            {"brand": "Chromium", "version": "150.0.7871.187"},
-                            {"brand": "Google Chrome", "version": "150.0.7871.187"}
-                        ],
-                        "fullVersion": "150.0.7871.187",
-                        "platform": os_platform,
-                        "platformVersion": platform_version,
-                        "architecture": arch,
-                        "model": model,
-                        "mobile": is_mobile,
-                        "bitness": "64"
-                    }
-                }
+                "params": ua_override_params
             }))
             await ws.recv()
 
@@ -476,14 +724,16 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 except Exception:
                     pass
 
-            # 5c. Timezone Override via CDP (only when timezone_id is set for proxied profiles)
-            if timezone_id and timezone_id.strip():
-                await ws.send(json.dumps({
-                    "id": 8,
-                    "method": "Emulation.setTimezoneOverride",
-                    "params": { "timezoneId": timezone_id }
-                }))
-                await ws.recv()
+            # 5c. Timezone Override via CDP (normalizes Asia/Calcutta to Asia/Kolkata, defaults to Asia/Kolkata for host IP alignment)
+            eff_tz = timezone_id.strip() if (timezone_id and timezone_id.strip()) else "Asia/Kolkata"
+            if eff_tz == 'Asia/Calcutta':
+                eff_tz = 'Asia/Kolkata'
+            await ws.send(json.dumps({
+                "id": 8,
+                "method": "Emulation.setTimezoneOverride",
+                "params": { "timezoneId": eff_tz }
+            }))
+            await ws.recv()
 
             # 6. Navigate to target URL (triggers extension + CDP scripts on fresh load)
             await ws.send(json.dumps({
@@ -503,7 +753,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             except Exception:
                 pass
 
-            print(f"[Stealth Engine CDP] Overrides applied successfully! ({webgl_vendor} / {webgl_renderer} / TZ={timezone_id})", flush=True)
+            print(f"[Stealth Engine CDP] Overrides applied successfully! ({webgl_vendor} / {webgl_renderer} / TZ={eff_tz})", flush=True)
 
     except Exception as e:
         print(f"[Stealth Engine CDP] Warning: {e}", flush=True)
@@ -512,21 +762,21 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
 def sanitize_user_agent(ua, os_hint=""):
     """
-    Ensures User-Agent uses Chromium/CriOS syntax instead of raw Safari syntax.
-    Safari-only User-Agents leak WebKit vs Blink V8 engine mismatches on WhatIsMyBrowser & CreepJS.
+    Ensures User-Agent uses modern Chromium/CriOS syntax matching the portable engine.
     """
     if not ua:
-        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36"
+        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
 
     import re
-    ua = re.sub(r'Chrome/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'Chrome/150.0.7871.187', ua)
-    ua = re.sub(r'CriOS/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'CriOS/150.0.7871.187', ua)
+    # Upgrade any older Chrome/CriOS versions to match the installed Chromium 150 engine
+    ua = re.sub(r'Chrome/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'Chrome/150.0.7871.128', ua)
+    ua = re.sub(r'CriOS/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'CriOS/150.0.7871.128', ua)
 
     if "Version/" in ua and "Safari/" in ua and "Chrome/" not in ua and "CriOS/" not in ua:
         if "iPhone" in ua or "iPad" in ua or "iOS" in os_hint or "iPhone" in os_hint or "iPad" in os_hint:
-            ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) CriOS/150.0.7871.187 Mobile/15E148 Safari/537.36"
+            ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) CriOS/150.0.7871.128 Mobile/15E148 Safari/537.36"
         else:
-            ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36"
+            ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
 
     return ua
 
@@ -561,6 +811,27 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         useragent=useragent
     )
 
+    # Configure search engine defaults in profile database if present
+    try:
+        import sqlite3
+        web_data_path = os.path.join(user_data_dir, 'Default', 'Web Data')
+        if os.path.exists(web_data_path):
+            conn = sqlite3.connect(web_data_path, timeout=2.0)
+            c = conn.cursor()
+            c.execute("""
+                UPDATE keywords 
+                SET short_name = 'Google',
+                    keyword = 'google.com',
+                    url = 'https://www.google.com/search?q={searchTerms}',
+                    suggest_url = 'https://www.google.com/complete/search?client=chrome&q={searchTerms}',
+                    favicon_url = 'https://www.google.com/favicon.ico'
+                WHERE short_name = 'No Search' OR url LIKE 'http://{searchTerms}%';
+            """)
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        print(f"[Stealth Engine] Note on search config: {e}", flush=True)
+
     # Build Chrome flags
     import random
     if port == 9222:
@@ -577,13 +848,17 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         '--no-first-run',
         '--no-default-browser-check',
         '--disable-background-networking',
-        '--no-sandbox',
-        '--test-type',
+        '--disable-blink-features=AutomationControlled',
         '--remote-allow-origins=*',
     ]
 
     if useragent:
         chrome_args.append(f'--user-agent={useragent}')
+        if 'Android' in useragent or 'iPhone' in useragent or 'iPad' in useragent or 'Mobile' in useragent:
+            chrome_args.extend([
+                '--touch-events=enabled',
+                '--enable-viewport'
+            ])
 
     active_bridge = None
     if proxy_str:
@@ -633,18 +908,24 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
 
     # Apply CDP stealth overrides as a secondary reinforcement
     print(f"[Stealth Engine] Waiting for CDP connection on port {port} (extension already active)...", flush=True)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id))
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if running_loop and running_loop.is_running():
+            asyncio.create_task(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id))
+        else:
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                new_loop.run_until_complete(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id))
+            finally:
+                new_loop.close()
     except Exception as e:
         print(f"[Stealth Engine CDP Error] {e}", flush=True)
         print(f"[Stealth Engine] Extension-based fingerprint protection is still active.", flush=True)
-    finally:
-        try:
-            loop.close()
-        except Exception:
-            pass
 
     return proc.pid, port, active_bridge
 

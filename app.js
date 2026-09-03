@@ -543,10 +543,10 @@
       tags: ['Custom', 'Chrome'],
       os: 'Windows 11',
       browser: 'Chrome 150',
-      useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36',
+      useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36',
       resolution: { width: 1920, height: 1080, dpr: 1 },
       hardware: { cpuCores: 8, memoryGb: 16, webGlVendor: 'Google Inc. (NVIDIA)', webGlRenderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)', canvasNoise: 'Noise' },
-      proxy: { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'America/Los_Angeles' }
+      proxy: { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' }
     };
 
     const presetsHtml = window.DEVICE_PRESETS ? window.DEVICE_PRESETS.map(preset => `<option value="${preset.id}">${preset.name}</option>`).join('') : '';
@@ -560,8 +560,7 @@
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 1.3rem;">🛡️</span>
               <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">${state.editingProfile ? 'Edit Profile Hardware & Navigator' : 'Create Custom Anti-Detect Profile'}</h3>
-            </div>
-            <button id="close-modal" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.3rem;">✕</button>
+<button id="close-modal" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.3rem;">✕</button>
           </div>
 
           <!-- Body -->
@@ -569,26 +568,31 @@
             
             <!-- Quick Preset Picker -->
             <div style="background: rgba(0,242,254,0.06); border: 1px solid rgba(0,242,254,0.2); padding: 14px 18px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
-              <label style="font-size: 0.82rem; font-weight: 700; color: var(--primary);">📱 Quick Hardware Device Preset Picker (110 Genuine Models Available)</label>
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--primary);">💻 Quick Hardware Device Preset Picker (Authentic Desktop Models)</label>
               <select id="modal-device-preset" class="select-field" style="background: #090d16; border-color: var(--primary);">
-                <option value="custom">-- Choose a Real Device Preset (Auto-fills WebGL, Resolution, CPU, RAM & UA) --</option>
+                <option value="custom">-- Choose an Authentic Desktop Machine (Auto-fills WebGL, Resolution, CPU, RAM & UA) --</option>
                 
-                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 📱 PHONES (40 Genuine Models) ═════════</option>
-                ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Phones').map(item => `
-                  <option value="${item.id}">📱 ${item.name} (${item.webGlVendor} ${item.webGlRenderer.split(' ')[0]} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 💻 LAPTOPS & ULTRABOOKS ═════════</option>
+                ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Laptops').map(item => `
+                  <option value="${item.id}">💻 ${item.name} (${item.webGlVendor.replace('Google Inc. ', '')} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
                 `).join('')}
 
-                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 📱 TABLETS (35 Genuine Models) ═════════</option>
-                ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Tablets').map(item => `
-                  <option value="${item.id}">📱 ${item.name} (${item.webGlVendor} ${item.webGlRenderer.split(' ')[0]} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🖥️ GAMING & WORKSTATIONS ═════════</option>
+                ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Gaming & Workstations').map(item => `
+                  <option value="${item.id}">🖥️ ${item.name} (${item.webGlVendor.replace('Google Inc. ', '')} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
                 `).join('')}
 
-                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 💻 LAPTOPS & DESKTOPS (35 Genuine Models) ═════════</option>
-                ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Desktops').map(item => `
-                  <option value="${item.id}">💻 ${item.name} (${item.webGlVendor} ${item.webGlRenderer.split(' ')[0]} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🍏 APPLE MACBOOK & MAC ═════════</option>
+                ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Mac').map(item => `
+                  <option value="${item.id}">🍏 ${item.name} (${item.webGlVendor} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
+                `).join('')}
+
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🐧 LINUX WORKSTATIONS ═════════</option>
+                ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Linux Workstations').map(item => `
+                  <option value="${item.id}">🐧 ${item.name} (${item.webGlVendor.replace('Google Inc. ', '')} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
                 `).join('')}
               </select>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">Selecting a preset or clicking Randomize automatically fills WebGL, Resolution, OS, CPU Cores, RAM, and User-Agent.</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Selecting a preset automatically fills native WebGL, Screen Resolution, OS, CPU Cores, RAM, and User-Agent.</span>
             </div>
 
             <!-- Profile Name & OS -->
@@ -600,39 +604,17 @@
               <div>
                 <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Operating System</label>
                 <select id="modal-os" class="select-field">
-                  <optgroup label="💻 Desktop Windows & macOS">
+                  <optgroup label="💻 Windows Desktop">
                     <option value="Windows 11" ${p.os === 'Windows 11' ? 'selected' : ''}>Windows 11 Pro 64-bit</option>
-                    <option value="Windows 10" ${p.os === 'Windows 10' ? 'selected' : ''}>Windows 10 Home 64-bit</option>
-                    <option value="Windows 8.1" ${p.os === 'Windows 8.1' ? 'selected' : ''}>Windows 8.1 Pro</option>
-                    <option value="Windows 7" ${p.os === 'Windows 7' ? 'selected' : ''}>Windows 7 Ultimate</option>
+                    <option value="Windows 10" ${p.os === 'Windows 10' ? 'selected' : ''}>Windows 10 Pro 64-bit</option>
+                  </optgroup>
+                  <optgroup label="🍏 macOS Desktop">
                     <option value="macOS Sonoma" ${p.os === 'macOS Sonoma' ? 'selected' : ''}>macOS 14 Sonoma</option>
                     <option value="macOS Ventura" ${p.os === 'macOS Ventura' ? 'selected' : ''}>macOS 13 Ventura</option>
-                    <option value="macOS Monterey" ${p.os === 'macOS Monterey' ? 'selected' : ''}>macOS 12 Monterey</option>
-                    <option value="macOS Big Sur" ${p.os === 'macOS Big Sur' ? 'selected' : ''}>macOS 11 Big Sur</option>
                   </optgroup>
-                  <optgroup label="🐧 Linux & ChromeOS">
+                  <optgroup label="🐧 Linux Desktop">
                     <option value="Ubuntu 24.04 LTS" ${p.os === 'Ubuntu 24.04 LTS' ? 'selected' : ''}>Ubuntu 24.04 LTS</option>
-                    <option value="Ubuntu 22.04 LTS" ${p.os === 'Ubuntu 22.04 LTS' ? 'selected' : ''}>Ubuntu 22.04 LTS</option>
                     <option value="Fedora 40" ${p.os === 'Fedora 40' ? 'selected' : ''}>Fedora 40 Workstation</option>
-                    <option value="Debian 12" ${p.os === 'Debian 12' ? 'selected' : ''}>Debian 12 (Bookworm)</option>
-                    <option value="Arch Linux" ${p.os === 'Arch Linux' ? 'selected' : ''}>Arch Linux x86_64</option>
-                    <option value="ChromeOS 126" ${p.os === 'ChromeOS 126' ? 'selected' : ''}>ChromeOS 126</option>
-                  </optgroup>
-                  <optgroup label="📱 Mobile Android OS">
-                    <option value="Android 15" ${p.os === 'Android 15' ? 'selected' : ''}>Android 15</option>
-                    <option value="Android 14" ${p.os === 'Android 14' ? 'selected' : ''}>Android 14</option>
-                    <option value="Android 13" ${p.os === 'Android 13' ? 'selected' : ''}>Android 13</option>
-                    <option value="Android 12" ${p.os === 'Android 12' ? 'selected' : ''}>Android 12</option>
-                    <option value="Android 11" ${p.os === 'Android 11' ? 'selected' : ''}>Android 11</option>
-                    <option value="Android 10" ${p.os === 'Android 10' ? 'selected' : ''}>Android 10</option>
-                    <option value="Android 9" ${p.os === 'Android 9' ? 'selected' : ''}>Android 9 (Pie)</option>
-                  </optgroup>
-                  <optgroup label="📱 Apple iOS & iPadOS">
-                    <option value="iOS 17" ${p.os === 'iOS 17' ? 'selected' : ''}>iOS 17.5</option>
-                    <option value="iOS 16" ${p.os === 'iOS 16' ? 'selected' : ''}>iOS 16.6</option>
-                    <option value="iOS 15" ${p.os === 'iOS 15' ? 'selected' : ''}>iOS 15.7</option>
-                    <option value="iPadOS 17" ${p.os === 'iPadOS 17' ? 'selected' : ''}>iPadOS 17.5</option>
-                    <option value="iPadOS 16" ${p.os === 'iPadOS 16' ? 'selected' : ''}>iPadOS 16.6</option>
                   </optgroup>
                 </select>
               </div>
@@ -643,35 +625,20 @@
               <div>
                 <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Screen Resolution</label>
                 <select id="modal-res-preset" class="select-field">
-                  <option value="1080x2340" ${p.resolution.width === 1080 && p.resolution.height === 2340 ? 'selected' : ''}>1080 x 2340 (Redmi Note 7 / Galaxy A54)</option>
-                  <option value="1080x2400" ${p.resolution.width === 1080 && p.resolution.height === 2400 ? 'selected' : ''}>1080 x 2400 (Redmi Note 12 Pro / Poco X5)</option>
-                  <option value="1220x2712" ${p.resolution.width === 1220 ? 'selected' : ''}>1220 x 2712 (Redmi Note 13 Pro+)</option>
-                  <option value="1440x3120" ${p.resolution.width === 1440 && p.resolution.height === 3120 ? 'selected' : ''}>1440 x 3120 (Galaxy S24 Ultra / Pixel 8 Pro)</option>
-                  <option value="1290x2796" ${p.resolution.width === 1290 ? 'selected' : ''}>1290 x 2796 (iPhone 15 Pro Max)</option>
-                  <option value="1179x2556" ${p.resolution.width === 1179 ? 'selected' : ''}>1179 x 2556 (iPhone 15 Pro / 14 Pro)</option>
-                  <option value="2048x2732" ${p.resolution.width === 2048 ? 'selected' : ''}>2048 x 2732 (iPad Pro 12.9")</option>
-                  <option value="1668x2420" ${p.resolution.width === 1668 ? 'selected' : ''}>1668 x 2420 (iPad Pro 11" M4)</option>
-                  <option value="1848x2960" ${p.resolution.width === 1848 ? 'selected' : ''}>1848 x 2960 (Galaxy Tab S9 Ultra)</option>
-                  <option value="1800x2880" ${p.resolution.width === 1800 ? 'selected' : ''}>1800 x 2880 (Xiaomi Pad 6)</option>
-                  <option value="1920x1080" ${p.resolution.width === 1920 && p.resolution.height === 1080 ? 'selected' : ''}>1920 x 1080 (FHD Laptop / Desktop)</option>
-                  <option value="1920x1200" ${p.resolution.width === 1920 && p.resolution.height === 1200 ? 'selected' : ''}>1920 x 1200 (Dell XPS 15 / ThinkPad)</option>
-                  <option value="2560x1440" ${p.resolution.width === 2560 && p.resolution.height === 1440 ? 'selected' : ''}>2560 x 1440 (2K QHD Monitor)</option>
-                  <option value="2560x1600" ${p.resolution.width === 2560 && p.resolution.height === 1600 ? 'selected' : ''}>2560 x 1600 (Asus ROG Gaming Laptop)</option>
-                  <option value="3024x1964" ${p.resolution.width === 3024 ? 'selected' : ''}>3024 x 1964 (MacBook Pro 14" M3)</option>
-                  <option value="3456x2234" ${p.resolution.width === 3456 ? 'selected' : ''}>3456 x 2234 (MacBook Pro 16" Retina)</option>
-                  <option value="3840x2160" ${p.resolution.width === 3840 ? 'selected' : ''}>3840 x 2160 (4K UHD Display)</option>
-                  <option value="5120x2880" ${p.resolution.width === 5120 ? 'selected' : ''}>5120 x 2880 (5K Mac Studio Display)</option>
+                  <option value="1920x1080" ${p.resolution.width === 1920 && p.resolution.height === 1080 ? 'selected' : ''}>1920 x 1080 (FHD Desktop / Laptop - Most Popular)</option>
+                  <option value="2560x1440" ${p.resolution.width === 2560 && p.resolution.height === 1440 ? 'selected' : ''}>2560 x 1440 (2K QHD Desktop Display)</option>
+                  <option value="2560x1600" ${p.resolution.width === 2560 && p.resolution.height === 1600 ? 'selected' : ''}>2560 x 1600 (16:10 Laptop Display)</option>
+                  <option value="1920x1200" ${p.resolution.width === 1920 && p.resolution.height === 1200 ? 'selected' : ''}>1920 x 1200 (Dell XPS / ThinkPad)</option>
+                  <option value="3840x2160" ${p.resolution.width === 3840 && p.resolution.height === 2160 ? 'selected' : ''}>3840 x 2160 (4K UHD Display)</option>
+                  <option value="1366x768" ${p.resolution.width === 1366 ? 'selected' : ''}>1366 x 768 (Standard Laptop)</option>
                 </select>
               </div>
 
               <div>
                 <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 6px;">CPU Cores</label>
                 <select id="modal-cpu" class="select-field">
-                  <option value="2" ${p.hardware.cpuCores === 2 ? 'selected' : ''}>2 Cores</option>
-                  <option value="4" ${p.hardware.cpuCores === 4 ? 'selected' : ''}>4 Cores</option>
                   <option value="6" ${p.hardware.cpuCores === 6 ? 'selected' : ''}>6 Cores</option>
                   <option value="8" ${p.hardware.cpuCores === 8 ? 'selected' : ''}>8 Cores</option>
-                  <option value="9" ${p.hardware.cpuCores === 9 ? 'selected' : ''}>9 Cores</option>
                   <option value="12" ${p.hardware.cpuCores === 12 ? 'selected' : ''}>12 Cores</option>
                   <option value="14" ${p.hardware.cpuCores === 14 ? 'selected' : ''}>14 Cores</option>
                   <option value="16" ${p.hardware.cpuCores === 16 ? 'selected' : ''}>16 Cores</option>
@@ -682,11 +649,7 @@
               <div>
                 <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 6px;">RAM Memory</label>
                 <select id="modal-ram" class="select-field">
-                  <option value="2" ${p.hardware.memoryGb === 2 ? 'selected' : ''}>2 GB</option>
-                  <option value="4" ${p.hardware.memoryGb === 4 ? 'selected' : ''}>4 GB</option>
-                  <option value="6" ${p.hardware.memoryGb === 6 ? 'selected' : ''}>6 GB</option>
                   <option value="8" ${p.hardware.memoryGb === 8 ? 'selected' : ''}>8 GB</option>
-                  <option value="12" ${p.hardware.memoryGb === 12 ? 'selected' : ''}>12 GB</option>
                   <option value="16" ${p.hardware.memoryGb === 16 ? 'selected' : ''}>16 GB</option>
                   <option value="32" ${p.hardware.memoryGb === 32 ? 'selected' : ''}>32 GB</option>
                   <option value="64" ${p.hardware.memoryGb === 64 ? 'selected' : ''}>64 GB</option>
@@ -702,16 +665,10 @@
                 <div>
                   <label style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 4px;">WebGL Vendor</label>
                   <select id="modal-webgl-vendor" class="select-field">
-                    <option value="Qualcomm" ${p.hardware.webGlVendor === 'Qualcomm' ? 'selected' : ''}>Qualcomm (Mobile Snapdragon)</option>
-                    <option value="ARM" ${p.hardware.webGlVendor === 'ARM' ? 'selected' : ''}>ARM (Mali Mobile)</option>
-                    <option value="Apple Inc." ${p.hardware.webGlVendor === 'Apple Inc.' ? 'selected' : ''}>Apple Inc. (Apple Metal GPU)</option>
                     <option value="Google Inc. (NVIDIA)" ${p.hardware.webGlVendor === 'Google Inc. (NVIDIA)' ? 'selected' : ''}>Google Inc. (NVIDIA)</option>
                     <option value="Google Inc. (Intel)" ${p.hardware.webGlVendor === 'Google Inc. (Intel)' ? 'selected' : ''}>Google Inc. (Intel)</option>
                     <option value="Google Inc. (AMD)" ${p.hardware.webGlVendor === 'Google Inc. (AMD)' ? 'selected' : ''}>Google Inc. (AMD)</option>
-                    <option value="Samsung" ${p.hardware.webGlVendor === 'Samsung' ? 'selected' : ''}>Samsung Electronics</option>
-                    <option value="MediaTek" ${p.hardware.webGlVendor === 'MediaTek' ? 'selected' : ''}>MediaTek Inc.</option>
-                    <option value="Imagination Technologies" ${p.hardware.webGlVendor === 'Imagination Technologies' ? 'selected' : ''}>Imagination Technologies (PowerVR)</option>
-                    <option value="Microsoft" ${p.hardware.webGlVendor === 'Microsoft' ? 'selected' : ''}>Microsoft Basic Render Driver</option>
+                    <option value="Apple Inc." ${p.hardware.webGlVendor === 'Apple Inc.' ? 'selected' : ''}>Apple Inc. (Apple Silicon)</option>
                   </select>
                 </div>
 
@@ -720,10 +677,10 @@
                   <select id="modal-webgl-renderer-preset" class="select-field" style="margin-bottom: 6px; font-size: 0.78rem;">
                     <option value="custom">-- Choose a WebGL Renderer String Preset --</option>
                     ${(window.WEBGL_CATALOG || []).map(item => `
-                      <option value="${item.renderer}" ${p.hardware.webGlRenderer === item.renderer ? 'selected' : ''}>[${item.vendor}] ${item.renderer}</option>
+                      <option value="${item.renderer}" ${p.hardware.webGlRenderer === item.renderer ? 'selected' : ''}>[${item.vendor.replace('Google Inc. ', '')}] ${item.renderer}</option>
                     `).join('')}
                   </select>
-                  <input type="text" id="modal-webgl-renderer" class="input-field" value="${p.hardware.webGlRenderer || 'Adreno (TM) 512'}">
+                  <input type="text" id="modal-webgl-renderer" class="input-field" value="${p.hardware.webGlRenderer || 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)'}">
                 </div>
               </div>
             </div>
@@ -731,42 +688,9 @@
             <!-- User-Agent Input & Presets -->
             <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">🌐 User-Agent String Selection (20 Real Preset Strings)</label>
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">🌐 User-Agent String Selection (Desktop Chrome 150)</label>
               </div>
               <select id="modal-ua-preset" class="select-field" style="font-size: 0.78rem;">
-                <option value="custom">-- Choose from 20 Genuine User-Agent Presets (Auto-fills text input below) --</option>
-                
-                <optgroup label="📱 Android & iPhone Mobile UAs">
-                  <option value="Mozilla/5.0 (Linux; Android 10; Redmi Note 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Mobile Safari/537.36">Redmi Note 7 (Chrome 150 / Android 10)</option>
-                  <option value="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Mobile Safari/537.36">Samsung Galaxy S24 Ultra (Chrome 150 / Android 14)</option>
-                  <option value="Mozilla/5.0 (Linux; Android 13; SM-F946B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Mobile Safari/537.36">Samsung Galaxy Z Fold 5 (Chrome 150 / Android 13)</option>
-                  <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/605.1.15">iPhone 15 Pro Max (Safari 17.4 / iOS 17)</option>
-                  <option value="Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/605.1.15">iPhone 14 Pro (Safari 16.5 / iOS 16)</option>
-                  <option value="Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Mobile Safari/537.36">Google Pixel 8 Pro (Chrome 150 / Android 14)</option>
-                  <option value="Mozilla/5.0 (Linux; Android 14; CPH2573) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Mobile Safari/537.36">OnePlus 12 (Chrome 150 / Android 14)</option>
-                  <option value="Mozilla/5.0 (Linux; Android 14; 24031PN0DC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Mobile Safari/537.36">Xiaomi 14 Ultra (Chrome 150 / Android 14)</option>
-                </optgroup>
-
-                <optgroup label="📱 iPad & Android Tablet UAs">
-                  <option value="Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/605.1.15">iPad Pro 11" M4 (Safari 17.4 / iPadOS 17)</option>
-                  <option value="Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/605.1.15">iPad Pro 12.9" M2 (Safari 17.2 / iPadOS 17)</option>
-                  <option value="Mozilla/5.0 (Linux; Android 13; SM-X910) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36">Samsung Galaxy Tab S9 Ultra (Chrome 150 / Android 13)</option>
-                  <option value="Mozilla/5.0 (Linux; Android 13; 23043RP34G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36">Xiaomi Pad 6 (Chrome 150 / Android 13)</option>
-                </optgroup>
-
-                <optgroup label="💻 Windows Desktop & Laptop UAs">
-                  <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36">Windows 11 (Chrome 150 64-bit)</option>
-                  <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36">Windows 11 (Chrome 150 64-bit)</option>
-                  <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0">Windows 11 (Firefox 127.0)</option>
-                  <option value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36 Edg/126.0.0.0">Windows 11 (Microsoft Edge 126)</option>
-                </optgroup>
-
-                <optgroup label="💻 macOS & Mac Workstation UAs">
-                  <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36">macOS Sonoma (Chrome 150 / Intel & Apple Silicon)</option>
-                  <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15">macOS Sonoma (Safari 17.4)</option>
-                  <option value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0">macOS Sonoma (Firefox 127.0)</option>
-                  <option value="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36">Linux Ubuntu / Fedora (Chrome 150 64-bit)</option>
-                </optgroup>
               </select>
               <input type="text" id="modal-ua" class="input-field" value="${p.useragent}">
             </div>
@@ -1044,7 +968,7 @@
           const prof = state.profiles.find(p => p.id === id);
           if (prof) {
             if (idx === 0) {
-              prof.proxy = { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'America/Los_Angeles' };
+              prof.proxy = { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' };
             } else {
               const selectedPx = state.proxies[idx - 1];
               prof.proxy = {
@@ -1055,7 +979,7 @@
                 username: selectedPx.username || '',
                 password: selectedPx.password || '',
                 location: selectedPx.location || 'Proxy Pool IP',
-                timezone: 'America/Los_Angeles'
+                timezone: 'Asia/Kolkata'
               };
             }
           }
@@ -1448,7 +1372,7 @@
         if (!prof) return;
 
         if (pxId === 'direct') {
-          prof.proxy = { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'America/Los_Angeles' };
+          prof.proxy = { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' };
         } else {
           const selectedPx = state.proxies.find(x => x.id === pxId);
           if (selectedPx) {
@@ -1460,7 +1384,7 @@
               username: selectedPx.username || '',
               password: selectedPx.password || '',
               location: selectedPx.location || 'Proxy Pool IP',
-              timezone: 'America/Los_Angeles'
+              timezone: 'Asia/Kolkata'
             };
           }
         }
@@ -1676,64 +1600,116 @@
       });
     }
 
+    // Auto-sync OS selection with User-Agent & WebGL when user changes OS dropdown manually
+    const modalOsSelect = document.getElementById('modal-os');
+    if (modalOsSelect) {
+      modalOsSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        const uaInput = document.getElementById('modal-ua');
+        const uaPresetSelect = document.getElementById('modal-ua-preset');
+        const vendorSelect = document.getElementById('modal-webgl-vendor');
+        const rendererInput = document.getElementById('modal-webgl-renderer');
+        const rendererPresetSelect = document.getElementById('modal-webgl-renderer-preset');
+
+        if (val.includes('macOS')) {
+          const macUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36';
+          if (uaInput) {
+            uaInput.value = macUA;
+            if (uaPresetSelect) uaPresetSelect.value = macUA;
+          }
+          if (vendorSelect) {
+            vendorSelect.value = 'Apple Inc.';
+            if (rendererInput) rendererInput.value = 'Apple M3 Max';
+            if (rendererPresetSelect) rendererPresetSelect.value = 'Apple M3 Max';
+          }
+        } else if (val.includes('Linux') || val.includes('Ubuntu') || val.includes('Fedora')) {
+          const linuxUA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36';
+          if (uaInput) {
+            uaInput.value = linuxUA;
+            if (uaPresetSelect) uaPresetSelect.value = linuxUA;
+          }
+          if (vendorSelect && vendorSelect.value.includes('Apple')) {
+            vendorSelect.value = 'Google Inc. (NVIDIA)';
+            if (rendererInput) rendererInput.value = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)';
+            if (rendererPresetSelect) rendererPresetSelect.value = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)';
+          }
+        } else {
+          const winUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36';
+          if (uaInput) {
+            uaInput.value = winUA;
+            if (uaPresetSelect) uaPresetSelect.value = winUA;
+          }
+          if (vendorSelect && vendorSelect.value.includes('Apple')) {
+            vendorSelect.value = 'Google Inc. (NVIDIA)';
+            if (rendererInput) rendererInput.value = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)';
+            if (rendererPresetSelect) rendererPresetSelect.value = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)';
+          }
+        }
+      });
+    }
+
     // In-device variable randomizer: Keeps device identity intact, varies OS, hardware specs & UA realistically
     function randomizeDeviceVariablesInPlace(currentOS, currentVendor, currentRenderer, currentUA) {
       const osStr = currentOS || 'Windows 11';
       const vendorStr = currentVendor || 'Google Inc. (NVIDIA)';
       const rendererStr = currentRenderer || 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)';
 
-      // 1. OS Randomization (compatible within the same OS family)
-      let newOS = osStr;
-      if (osStr.includes('Android')) {
-        const androidVersions = ['Android 14', 'Android 13', 'Android 12', 'Android 11', 'Android 10'];
-        newOS = androidVersions[Math.floor(Math.random() * androidVersions.length)];
-      } else if (osStr.includes('macOS')) {
+      // 1. OS Randomization (Authentic Desktop only)
+      let newOS = 'Windows 11';
+      if (osStr.includes('macOS') || osStr.includes('Mac')) {
         const macVersions = ['macOS Sonoma', 'macOS Ventura', 'macOS Monterey'];
         newOS = macVersions[Math.floor(Math.random() * macVersions.length)];
-      } else if (osStr.includes('iOS') || osStr.includes('iPadOS')) {
-        const iosVersions = ['iOS 17', 'iOS 16', 'iOS 15'];
-        newOS = iosVersions[Math.floor(Math.random() * iosVersions.length)];
-      } else if (osStr.includes('Windows')) {
+      } else if (osStr.includes('Linux')) {
+        const linuxVersions = ['Ubuntu 24.04 LTS', 'Ubuntu 22.04 LTS', 'Fedora 40'];
+        newOS = linuxVersions[Math.floor(Math.random() * linuxVersions.length)];
+      } else {
         const winVersions = ['Windows 11', 'Windows 10'];
         newOS = winVersions[Math.floor(Math.random() * winVersions.length)];
       }
 
-      // 2. User-Agent minor patch version & OS version randomization
-      const chromePatchVersions = ['126.0.6478.122', '126.0.6478.127', '126.0.6478.182', '125.0.6422.141', '125.0.6422.113'];
+      // 2. User-Agent minor patch version & Desktop OS syntax
+      const chromePatchVersions = ['150.0.7871.128', '150.0.7871.122', '150.0.7871.115', '150.0.7871.108', '150.0.7871.95'];
       const newPatch = chromePatchVersions[Math.floor(Math.random() * chromePatchVersions.length)];
-      let newUA = currentUA ? currentUA.replace(/Chrome\/\d+\.\d+\.\d+\.\d+/, `Chrome/${newPatch}`) : currentUA;
-      if (newOS.includes('Android') && newUA.includes('Android')) {
-        newUA = newUA.replace(/Android \d+/, newOS);
+      let newUA = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${newPatch} Safari/537.36`;
+      if (newOS.includes('macOS') || newOS.includes('Mac')) {
+        newUA = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${newPatch} Safari/537.36`;
+      } else if (newOS.includes('Linux') || newOS.includes('Ubuntu') || newOS.includes('Fedora')) {
+        newUA = `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${newPatch} Safari/537.36`;
       }
 
-      // 3. RAM & CPU Cores variation compatible with OS type
-      let possibleCores = [4, 6, 8, 12];
-      let possibleRam = [4, 6, 8, 12, 16];
-      if (newOS.includes('macOS') || newOS.includes('Windows 11')) {
-        possibleCores = [8, 10, 12, 16, 24];
-        possibleRam = [8, 16, 32, 64];
-      } else if (newOS.includes('iOS')) {
-        possibleCores = [6];
-        possibleRam = [4, 6, 8];
-      }
-
+      // 3. RAM & CPU Cores (Desktop specs)
+      const possibleCores = [8, 10, 12, 14, 16, 24];
+      const possibleRam = [16, 32, 64];
       const newCores = possibleCores[Math.floor(Math.random() * possibleCores.length)];
       const newRam = possibleRam[Math.floor(Math.random() * possibleRam.length)];
 
-      // 4. WebGL GPU renderer variant within same Vendor family
-      let newVendor = vendorStr;
-      let newRenderer = rendererStr;
+      // 4. Desktop WebGL GPU
+      let newVendor = 'Google Inc. (NVIDIA)';
+      let newRenderer = 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)';
 
-      if (vendorStr.includes('Qualcomm')) {
-        const qGpus = ['Adreno (TM) 750', 'Adreno (TM) 740', 'Adreno (TM) 730', 'Adreno (TM) 710', 'Adreno (TM) 685', 'Adreno (TM) 660', 'Adreno (TM) 642L', 'Adreno (TM) 512'];
-        newRenderer = qGpus[Math.floor(Math.random() * qGpus.length)];
-      } else if (vendorStr.includes('ARM')) {
-        const armGpus = ['Mali-G715 Immortalis-G715', 'Mali-G720 Immortalis-G720', 'Mali-G710 MC10', 'Mali-G78 MP14', 'Mali-G68 MC4', 'Mali-G610 MC6'];
-        newRenderer = armGpus[Math.floor(Math.random() * armGpus.length)];
-      } else if (vendorStr.includes('Apple')) {
-        const appleGpus = ['Apple GPU', 'Apple M1 GPU', 'Apple M2 GPU', 'Apple M4 GPU', 'Apple M1', 'Apple M1 Pro', 'Apple M1 Max', 'Apple M2', 'Apple M2 Pro', 'Apple M2 Max', 'Apple M3', 'Apple M3 Pro', 'Apple M3 Max'];
+      if (newOS.includes('macOS')) {
+        newVendor = 'Apple Inc.';
+        const appleGpus = ['Apple M3 Max', 'Apple M3 Pro', 'Apple M3', 'Apple M2 Max', 'Apple M2 Pro', 'Apple M1 Max', 'Apple M1 Pro'];
         newRenderer = appleGpus[Math.floor(Math.random() * appleGpus.length)];
-      } else if (vendorStr.includes('NVIDIA')) {
+      } else if (vendorStr.includes('AMD')) {
+        newVendor = 'Google Inc. (AMD)';
+        const amdGpus = [
+          'ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11 vs_5_0 ps_5_0)',
+          'ANGLE (AMD, AMD Radeon RX 7800 XT Direct3D11 vs_5_0 ps_5_0)',
+          'ANGLE (AMD, AMD Radeon RX 7700 XT Direct3D11 vs_5_0 ps_5_0)',
+          'ANGLE (AMD, AMD Radeon RX 6800 XT Direct3D11 vs_5_0 ps_5_0)'
+        ];
+        newRenderer = amdGpus[Math.floor(Math.random() * amdGpus.length)];
+      } else if (vendorStr.includes('Intel')) {
+        newVendor = 'Google Inc. (Intel)';
+        const intelGpus = [
+          'ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)',
+          'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)',
+          'ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)'
+        ];
+        newRenderer = intelGpus[Math.floor(Math.random() * intelGpus.length)];
+      } else {
+        newVendor = 'Google Inc. (NVIDIA)';
         const nvGpus = [
           'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)',
           'ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)',
@@ -1744,14 +1720,6 @@
           'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)'
         ];
         newRenderer = nvGpus[Math.floor(Math.random() * nvGpus.length)];
-      } else if (vendorStr.includes('Intel')) {
-        const intelGpus = [
-          'ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)',
-          'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)',
-          'ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)',
-          'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0)'
-        ];
-        newRenderer = intelGpus[Math.floor(Math.random() * intelGpus.length)];
       }
 
       return {
@@ -1831,7 +1799,7 @@
             webGlRenderer: rnd.webGlRenderer,
             canvasNoise: 'Noise'
           },
-          proxy: { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'America/Los_Angeles' },
+          proxy: { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' },
           storage: { cookiesCount: 0 }
         };
 
@@ -2095,6 +2063,13 @@
   document.addEventListener('DOMContentLoaded', fetchProfiles);
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     fetchProfiles();
+  }
+
+  // Ensure white rabbit cursor companion is active
+  if (!document.getElementById('omni-rabbit-cursor-companion')) {
+    const rScript = document.createElement('script');
+    rScript.src = 'rabbit.js?v=10.0';
+    document.body.appendChild(rScript);
   }
 
 })();

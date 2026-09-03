@@ -9,7 +9,7 @@ import threading
 import urllib.request
 import logging
 from logging.handlers import RotatingFileHandler
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 # Rotating Logger configuration
@@ -111,45 +111,45 @@ def validate_launch_inputs(profile_dict):
 DEFAULT_PROFILES = [
     {
         "id": "prof-1",
-        "name": "Workstation Alpha - US East",
-        "group": "Social Ads",
-        "tags": ["Facebook", "Ads Manager", "High Anonymity"],
+        "name": "Alienware x16 R2 Gaming Rig",
+        "group": "Desktops",
+        "tags": ["Windows 11", "RTX 4090", "Stealth"],
         "status": "stopped",
         "os": "Windows 11",
         "browser": "Chrome 150",
         "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
         "resolution": { "width": 1920, "height": 1080, "dpr": 1 },
-        "hardware": { "cpuCores": 8, "memoryGb": 16, "webGlVendor": "Google Inc. (NVIDIA)", "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", "canvasNoise": "Noise" },
-        "proxy": { "enabled": False, "type": "SOCKS5", "ip": "", "port": "", "location": "Direct Network", "timezone": "America/New_York", "webrtc": "Proxy IP" },
-        "storage": { "cookiesCount": 42, "hasSession": True }
+        "hardware": { "cpuCores": 16, "memoryGb": 64, "webGlVendor": "Google Inc. (NVIDIA)", "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)", "canvasNoise": "Noise" },
+        "proxy": { "enabled": False, "type": "SOCKS5", "ip": "", "port": "", "location": "Direct Network (India)", "timezone": "Asia/Kolkata", "webrtc": "Proxy IP" },
+        "storage": { "cookiesCount": 0, "hasSession": False }
     },
     {
         "id": "prof-2",
-        "name": "MacBook Pro - EU Central",
-        "group": "E-Commerce",
-        "tags": ["Amazon Seller", "EU Proxy", "macOS"],
+        "name": "Dell XPS 15 9530 Ultrabook",
+        "group": "Laptops",
+        "tags": ["Windows 11", "RTX 4070", "Primary"],
+        "status": "stopped",
+        "os": "Windows 11",
+        "browser": "Chrome 150",
+        "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
+        "resolution": { "width": 1920, "height": 1080, "dpr": 1 },
+        "hardware": { "cpuCores": 14, "memoryGb": 32, "webGlVendor": "Google Inc. (NVIDIA)", "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)", "canvasNoise": "Noise" },
+        "proxy": { "enabled": False, "type": "SOCKS5", "ip": "", "port": "", "location": "Direct Network (India)", "timezone": "Asia/Kolkata", "webrtc": "Proxy IP" },
+        "storage": { "cookiesCount": 0, "hasSession": False }
+    },
+    {
+        "id": "prof-3",
+        "name": "MacBook Pro 16\" (M3 Max)",
+        "group": "Mac",
+        "tags": ["macOS", "M3 Max", "Clean"],
         "status": "stopped",
         "os": "macOS Sonoma",
         "browser": "Chrome 150",
         "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
         "resolution": { "width": 2560, "height": 1440, "dpr": 2 },
-        "hardware": { "cpuCores": 8, "memoryGb": 16, "webGlVendor": "Apple Inc.", "webGlRenderer": "Apple M3 Max", "canvasNoise": "Noise" },
-        "proxy": { "enabled": False, "type": "HTTP", "ip": "", "port": "", "location": "Direct Network", "timezone": "Europe/Berlin", "webrtc": "Proxy IP" },
-        "storage": { "cookiesCount": 128, "hasSession": True }
-    },
-    {
-        "id": "prof-3",
-        "name": "Mobile Device Simulator",
-        "group": "Mobile",
-        "tags": ["Mobile", "iOS", "TikTok"],
-        "status": "stopped",
-        "os": "iOS 17",
-        "browser": "Safari 17.2",
-        "useragent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/605.1.15",
-        "resolution": { "width": 390, "height": 844, "dpr": 3 },
-        "hardware": { "cpuCores": 6, "memoryGb": 6, "webGlVendor": "Apple Inc.", "webGlRenderer": "Apple GPU", "canvasNoise": "Noise" },
-        "proxy": { "enabled": False, "type": "DIRECT", "ip": "127.0.0.1", "port": "", "location": "Direct", "timezone": "UTC", "webrtc": "Real IP" },
-        "storage": { "cookiesCount": 5, "hasSession": False }
+        "hardware": { "cpuCores": 16, "memoryGb": 64, "webGlVendor": "Apple Inc.", "webGlRenderer": "Apple M3 Max", "canvasNoise": "Noise" },
+        "proxy": { "enabled": False, "type": "SOCKS5", "ip": "", "port": "", "location": "Direct Network (India)", "timezone": "Asia/Kolkata", "webrtc": "Proxy IP" },
+        "storage": { "cookiesCount": 0, "hasSession": False }
     }
 ]
 
@@ -743,7 +743,7 @@ if __name__ == '__main__':
     logger.info(f"[OmniShield Engine] Detected Chrome Executable: {CHROME_EXEC}")
     logger.info(f"[OmniShield Engine] Profiles Storage Directory: {PROFILES_BASE_DIR}")
     try:
-        server = HTTPServer(('0.0.0.0', PORT), OmniShieldRequestHandler)
+        server = ThreadingHTTPServer(('0.0.0.0', PORT), OmniShieldRequestHandler)
         server.serve_forever()
     except Exception as e:
         logger.error(f"[Server Error] Could not start server on port {PORT}: {e}")
