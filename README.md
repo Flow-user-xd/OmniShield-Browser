@@ -75,27 +75,29 @@ OmniShield Studio (Web UI :3000)
 
 ## 🚀 Quick Start
 
-### 1. Prerequisites
-- **Operating System**: Windows 10/11 (macOS / Linux supported)
-- **Python**: Version 3.10 or newer
+### ⚡ 1-Click Launch (Windows - Recommended)
+Simply double-click **`start_studio.bat`** in the repository root:
+1. Automatically checks if Python 3 is installed (installs it quietly via winget or official installer if missing).
+2. Automatically installs Python dependencies (`pip install -r requirements.txt`).
+3. If Chromium is not found, prompts you to choose from the latest 3 releases of Ungoogled Chromium and downloads it with a live progress bar.
+4. Automatically opens `http://localhost:3000` in your browser and starts the studio!
 
-### 2. Installation
-Clone the repository and install the lightweight dependencies:
+---
+
+### 🛠️ Manual Installation (Cross-Platform)
+
 ```bash
-git clone https://github.com/your-username/OmniShield-Browser.git
+git clone https://github.com/Flow-user-xd/OmniShield-Browser.git
 cd OmniShield-Browser
 pip install -r requirements.txt
-```
 
-### 3. Running the Studio
-Launch the OmniShield Studio server:
-```bash
+# Download portable Chromium (choose version 1-3)
+python setup_portable_chromium.py
+
+# Start the Studio server
 python server.py
 ```
-Open your browser and navigate to:
-```
-http://localhost:3000
-```
+Then navigate to `http://localhost:3000` in your web browser.
 
 ### 4. Launching a Profile
 1. Click **"Launch Chrome Window"** on any pre-configured profile (*Alienware x16 R2*, *Dell XPS 15*, or *MacBook Pro M3*).

@@ -1,5 +1,79 @@
 [
   {
+    "id": "prof-1788458496598",
+    "name": "HP Omen 16 Gaming Laptop #455",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.182 Safari/537.36",
+    "resolution": {
+      "width": 2560,
+      "height": 1440,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 4,
+      "memoryGb": 12,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1788458493209",
+    "name": "Samsung Galaxy S24 Ultra #786",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.141 Safari/537.36",
+    "resolution": {
+      "width": 1440,
+      "height": 3120,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 12,
+      "memoryGb": 32,
+      "webGlVendor": "Qualcomm",
+      "webGlRenderer": "Adreno (TM) 642L",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "America/Los_Angeles"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
     "id": "prof-1788457868511",
     "name": "Acer Swift Go 14 #728",
     "tags": [
