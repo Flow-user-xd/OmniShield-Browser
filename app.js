@@ -568,26 +568,26 @@
             
             <!-- Quick Preset Picker -->
             <div style="background: rgba(0,242,254,0.06); border: 1px solid rgba(0,242,254,0.2); padding: 14px 18px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
-              <label style="font-size: 0.82rem; font-weight: 700; color: var(--primary);">💻 Quick Hardware Device Preset Picker (Authentic Desktop Models)</label>
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--primary);">💻 Quick Hardware Device Preset Picker (50 Authentic Desktop Models)</label>
               <select id="modal-device-preset" class="select-field" style="background: #090d16; border-color: var(--primary);">
                 <option value="custom">-- Choose an Authentic Desktop Machine (Auto-fills WebGL, Resolution, CPU, RAM & UA) --</option>
                 
-                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 💻 LAPTOPS & ULTRABOOKS ═════════</option>
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 💻 LAPTOPS & ULTRABOOKS (18 Models) ═════════</option>
                 ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Laptops').map(item => `
                   <option value="${item.id}">💻 ${item.name} (${item.webGlVendor.replace('Google Inc. ', '')} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
                 `).join('')}
 
-                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🖥️ GAMING & WORKSTATIONS ═════════</option>
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🎮 GAMING & WORKSTATIONS (22 Models) ═════════</option>
                 ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Gaming & Workstations').map(item => `
-                  <option value="${item.id}">🖥️ ${item.name} (${item.webGlVendor.replace('Google Inc. ', '')} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
+                  <option value="${item.id}">🎮 ${item.name} (${item.webGlVendor.replace('Google Inc. ', '')} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
                 `).join('')}
 
-                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🍏 APPLE MACBOOK & MAC ═════════</option>
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🍏 APPLE MACBOOK & MAC (6 Models) ═════════</option>
                 ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Mac').map(item => `
                   <option value="${item.id}">🍏 ${item.name} (${item.webGlVendor} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
                 `).join('')}
 
-                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🐧 LINUX WORKSTATIONS ═════════</option>
+                <option disabled style="background: #162032; color: var(--primary); font-weight: 800;">═════════ 🐧 LINUX WORKSTATIONS (4 Models) ═════════</option>
                 ${(window.DEVICE_PRESETS || []).filter(item => item.category === 'Linux Workstations').map(item => `
                   <option value="${item.id}">🐧 ${item.name} (${item.webGlVendor.replace('Google Inc. ', '')} | ${item.os} | ${item.resolution.width}x${item.resolution.height})</option>
                 `).join('')}
@@ -1791,7 +1791,7 @@
           os: item.os,
           browser: 'Chrome 150',
           useragent: rnd.useragent,
-          resolution: { width: item.resolution.width, height: item.resolution.height, dpr: item.os.includes('iOS') || item.os.includes('macOS') ? 2 : 1 },
+          resolution: { width: item.resolution.width, height: item.resolution.height, dpr: item.os.includes('macOS') ? 2 : 1 },
           hardware: {
             cpuCores: rnd.cpuCores,
             memoryGb: rnd.memoryGb,

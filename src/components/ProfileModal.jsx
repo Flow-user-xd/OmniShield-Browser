@@ -329,8 +329,6 @@ export default function ProfileModal({ isOpen, onClose, onSave, editingProfile }
                     <option value="Windows 11">Windows 11 (x64)</option>
                     <option value="macOS Sonoma">macOS Sonoma (ARM/Intel)</option>
                     <option value="Linux Ubuntu">Linux Ubuntu (x64)</option>
-                    <option value="iOS 17">iOS 17 Mobile</option>
-                    <option value="Android 14">Android 14 Mobile</option>
                   </select>
                 </div>
                 <div>
