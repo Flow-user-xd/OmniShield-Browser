@@ -141,7 +141,6 @@ function isOmniboxSearchQuery(urlStr) {
       return { isSearch: true, query: decoded };
     }
 
-    // Otherwise it's a real website with a valid TLD
     return { isSearch: false };
   } catch (err) {
     const raw = urlStr.replace(/^http:\/\//, '').replace(/\/$/, '');
@@ -149,13 +148,47 @@ function isOmniboxSearchQuery(urlStr) {
   }
 }
 
+function getSearchEngineUrl(query) {
+  const engine = (cfg.searchEngine || 'duckduckgo').toLowerCase();
+  const q = encodeURIComponent(query);
+  if (engine === 'google') {
+    return `https://www.google.com/search?q=${q}`;
+  } else if (engine === 'bing') {
+    return `https://www.bing.com/search?q=${q}`;
+  } else {
+    // DuckDuckGo: Privacy-first, zero CAPTCHAs, proxy-friendly!
+    return `https://duckduckgo.com/?q=${q}`;
+  }
+}
+
 if (chrome.webNavigation && chrome.webNavigation.onBeforeNavigate) {
   chrome.webNavigation.onBeforeNavigate.addListener((details) => {
     if (details.frameId !== 0) return; // Top-level tab navigation only
+
+    // 1. Google "Unusual traffic" (google.com/sorry) Automatic CAPTCHA Bypass:
+    // If Google flags the proxy/network IP and serves a reCAPTCHA block,
+    // automatically extract the user's query and route to DuckDuckGo!
+    if (details.url && details.url.includes('google.com/sorry/index')) {
+      try {
+        const parsed = new URL(details.url);
+        const continueUrl = parsed.searchParams.get('continue');
+        if (continueUrl) {
+          const contParsed = new URL(continueUrl);
+          const query = contParsed.searchParams.get('q');
+          if (query) {
+            console.log('[OmniShield] Google flagged IP with CAPTCHA block, auto-recovering to DuckDuckGo:', query);
+            chrome.tabs.update(details.tabId, { url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}` });
+            return;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. Natural Omnibox Search Queries:
     const { isSearch, query } = isOmniboxSearchQuery(details.url);
     if (isSearch && query) {
-      console.log('[OmniShield] Seamlessly resolving search query to Google:', query);
-      const targetUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      console.log('[OmniShield] Seamlessly resolving search query:', query);
+      const targetUrl = getSearchEngineUrl(query);
       chrome.tabs.update(details.tabId, { url: targetUrl });
     }
   });
@@ -167,8 +200,9 @@ if (chrome.webNavigation && chrome.webNavigation.onBeforeNavigate) {
         const raw = details.url.replace(/^http:\/\//, '').replace(/\/$/, '');
         const query = decodeURIComponent(raw).trim();
         if (query && query !== 'localhost' && query !== '127.0.0.1' && !/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(query)) {
-          console.log('[OmniShield] DNS resolution fallback to Google Search:', query);
-          chrome.tabs.update(details.tabId, { url: `https://www.google.com/search?q=${encodeURIComponent(query)}` });
+          console.log('[OmniShield] DNS resolution fallback to Search:', query);
+          const targetUrl = getSearchEngineUrl(query);
+          chrome.tabs.update(details.tabId, { url: targetUrl });
         }
       }
     }

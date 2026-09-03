@@ -88,7 +88,8 @@ const OMNI_CFG = {{
   cpuCores: {int(cpu_cores)},
   memoryGb: {int(memory_gb)},
   audioNoise: {seeds['audioNoise']:.13f},
-  timezone: {json.dumps(timezone_id)}
+  timezone: {json.dumps(timezone_id)},
+  searchEngine: "duckduckgo"
 }};
 if (typeof self !== 'undefined') self.__OMNI_CONFIG = OMNI_CFG;
 if (typeof window !== 'undefined') window.__OMNI_CONFIG = OMNI_CFG;
@@ -820,12 +821,12 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
             c = conn.cursor()
             c.execute("""
                 UPDATE keywords 
-                SET short_name = 'Google',
-                    keyword = 'google.com',
-                    url = 'https://www.google.com/search?q={searchTerms}',
-                    suggest_url = 'https://www.google.com/complete/search?client=chrome&q={searchTerms}',
-                    favicon_url = 'https://www.google.com/favicon.ico'
-                WHERE short_name = 'No Search' OR url LIKE 'http://{searchTerms}%';
+                SET short_name = 'DuckDuckGo',
+                    keyword = 'duckduckgo.com',
+                    url = 'https://duckduckgo.com/?q={searchTerms}',
+                    suggest_url = 'https://duckduckgo.com/ac/?q={searchTerms}&type=list',
+                    favicon_url = 'https://duckduckgo.com/favicon.ico'
+                WHERE prepopulate_id = 1 OR short_name = 'No Search' OR url LIKE 'http://{searchTerms}%';
             """)
             conn.commit()
             conn.close()
