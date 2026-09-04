@@ -1,44 +1,7 @@
 [
   {
-    "id": "prof-1788481002914",
-    "name": "MacBook Pro 16\" (M3 Max) #913",
-    "tags": [
-      "Randomized",
-      "Chrome"
-    ],
-    "status": "stopped",
-    "os": "macOS Sonoma",
-    "browser": "Chrome 150",
-    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.122 Safari/537.36",
-    "resolution": {
-      "width": 2560,
-      "height": 1440,
-      "dpr": 2
-    },
-    "hardware": {
-      "cpuCores": 16,
-      "memoryGb": 16,
-      "webGlVendor": "Apple Inc.",
-      "webGlRenderer": "Apple M3 Pro",
-      "canvasNoise": "Noise"
-    },
-    "proxy": {
-      "enabled": false,
-      "type": "SOCKS5",
-      "ip": "",
-      "port": "",
-      "username": "",
-      "password": "",
-      "location": "Direct Network",
-      "timezone": "Asia/Kolkata"
-    },
-    "storage": {
-      "cookiesCount": 0
-    }
-  },
-  {
-    "id": "prof-1788481002136",
-    "name": "Alienware m18 R2 Titan #331",
+    "id": "prof-1788504538785",
+    "name": "ASUS ROG Strix SCAR 18 #892",
     "tags": [
       "Randomized",
       "Chrome"
@@ -46,17 +9,17 @@
     "status": "stopped",
     "os": "Windows 11",
     "browser": "Chrome 150",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.115 Safari/537.36",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.95 Safari/537.36",
     "resolution": {
       "width": 2560,
       "height": 1600,
       "dpr": 1
     },
     "hardware": {
-      "cpuCores": 12,
-      "memoryGb": 32,
+      "cpuCores": 14,
+      "memoryGb": 64,
       "webGlVendor": "Google Inc. (NVIDIA)",
-      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0)",
       "canvasNoise": "Noise"
     },
     "proxy": {
@@ -67,44 +30,7 @@
       "username": "",
       "password": "",
       "location": "Direct Network",
-      "timezone": "Asia/Kolkata"
-    },
-    "storage": {
-      "cookiesCount": 0
-    }
-  },
-  {
-    "id": "prof-1788481001909",
-    "name": "Dell XPS 13 Plus 9320 #417",
-    "tags": [
-      "Randomized",
-      "Chrome"
-    ],
-    "status": "stopped",
-    "os": "Windows 11",
-    "browser": "Chrome 150",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
-    "resolution": {
-      "width": 1920,
-      "height": 1200,
-      "dpr": 1
-    },
-    "hardware": {
-      "cpuCores": 12,
-      "memoryGb": 16,
-      "webGlVendor": "Google Inc. (Intel)",
-      "webGlRenderer": "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)",
-      "canvasNoise": "Noise"
-    },
-    "proxy": {
-      "enabled": false,
-      "type": "SOCKS5",
-      "ip": "",
-      "port": "",
-      "username": "",
-      "password": "",
-      "location": "Direct Network",
-      "timezone": "Asia/Kolkata"
+      "timezone": "UTC"
     },
     "storage": {
       "cookiesCount": 0

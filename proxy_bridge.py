@@ -65,11 +65,14 @@ class ProxyBridge:
                 if self.remote_type != "SOCKS5":
                     print(f"[ProxyBridge] Auto-detected SOCKS5 (was configured as {self.remote_type})")
                 self.remote_type = "SOCKS5"
-            else:
-                # Server responded with something else (likely HTTP) — treat as HTTP
+            elif resp and (resp.startswith(b"HTTP") or resp.startswith(b"\r\n") or resp.startswith(b"<!")):
+                # Server explicitly responded with HTTP
                 if "SOCKS" in self.remote_type:
                     print(f"[ProxyBridge] Auto-detected HTTP proxy (was configured as {self.remote_type})")
                 self.remote_type = "HTTP"
+            else:
+                # Ambiguous or no response to probe: retain user-configured protocol
+                pass
         except Exception as e:
             print(f"[ProxyBridge] Protocol detection failed ({e}), using configured: {self.remote_type}")
 

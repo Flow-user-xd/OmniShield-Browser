@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniShield Security Shield</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(16, 23, 38, 0.88);
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #00f2fe;
+      --accent: #4facfe;
+      --success: #00e676;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "JetBrains Mono", Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 320px; padding: 14px; background: var(--bg); color: var(--text); font-family: var(--font); user-select: none; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: var(--primary); }
+    .brand img { width: 22px; height: 22px; }
+    .status-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--success); text-transform: uppercase; background: rgba(0, 230, 118, 0.12); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(0, 230, 118, 0.3); }
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .grid { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+    .row { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 8px; background: var(--card-bg); border-radius: 6px; border: 1px solid var(--border); }
+    .label { color: var(--text-muted); }
+    .val { font-family: var(--mono); color: var(--primary); font-weight: 600; }
+    .btn { width: 100%; padding: 8px; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, #00f2fe, #4facfe); color: #040810; margin-top: 6px; }
+    .btn:hover { opacity: 0.92; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand"><img src="icons/icon48.png" alt="Shield"> OmniShield</div>
+    <div class="status-badge"><div class="pulse-dot"></div> Active</div>
+  </div>
+  <div class="grid">
+    <div class="row"><span class="label">🎨 Canvas Noise</span><span class="val" id="canvasVal">Clamped Micro-Noise</span></div>
+    <div class="row"><span class="label">🎮 WebGL GPU</span><span class="val" id="webglVal">Spoofed GPU</span></div>
+    <div class="row"><span class="label">⚡ Hardware</span><span class="val" id="hwVal">Protected</span></div>
+    <div class="row"><span class="label">🌐 Timezone / Lang</span><span class="val" id="geoVal">Direct / en-US</span></div>
+    <div class="row"><span class="label">🛡️ WebRTC Leak</span><span class="val" id="webrtcVal" style="color: #00e676;">Masked</span></div>
+    <div class="row"><span class="label">🧩 External Exts</span><span class="val" style="color: #00e676;">Unlocked</span></div>
+  </div>
+  <button class="btn" id="btnTest">Test on BrowserLeaks</button>
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

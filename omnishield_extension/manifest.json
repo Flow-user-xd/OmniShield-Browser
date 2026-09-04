@@ -16,7 +16,8 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "OmniShield Security Shield"
+    "default_title": "OmniShield Security Shield",
+    "default_popup": "popup.html"
   },
   "permissions": [
     "scripting",
@@ -34,19 +35,18 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["config.js", "inject.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "config.js",
+        "inject.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN",
       "all_frames": true,
       "match_about_blank": true,
       "match_origin_as_fallback": true
-    },
-    {
-      "matches": ["<all_urls>"],
-      "js": ["rabbit.js"],
-      "run_at": "document_idle",
-      "all_frames": false
     }
   ]
 }

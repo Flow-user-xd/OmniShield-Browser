@@ -44,16 +44,22 @@ os.makedirs(PROFILES_DIR, exist_ok=True)
 def compute_profile_fingerprint_seeds(seed_str):
     """Compute unique fingerprint noise seeds from seed string or profile ID using SHA256."""
     hash_val = int(hashlib.sha256(str(seed_str).encode('utf-8')).hexdigest(), 16)
+    # Generate -1, 0, or +1 micro-noise delta per channel: subtle, zero visual artifacts, non-wrapping
+    r_delta = ((hash_val) % 3) - 1
+    g_delta = ((hash_val >> 8) % 3) - 1
+    b_delta = ((hash_val >> 16) % 3) - 1
+    if r_delta == 0 and g_delta == 0 and b_delta == 0:
+        r_delta = 1
     return {
-        'canvasR': (hash_val % 200) + 1,              # 1-200
-        'canvasG': ((hash_val >> 8) % 200) + 1,       # 1-200
-        'canvasB': ((hash_val >> 16) % 200) + 1,      # 1-200
-        'canvasStride': ((hash_val >> 24) % 12) + 4,   # 4-15 (pixel stride, multiplied by 4 in inject.js)
+        'canvasR': r_delta,
+        'canvasG': g_delta,
+        'canvasB': b_delta,
+        'canvasStride': ((hash_val >> 24) % 8) + 4,   # 4-11 (pixel stride)
         'audioNoise': ((hash_val >> 32) % 900 + 100) / 10000000000.0,  # unique tiny float per profile
     }
 
 
-def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, timezone_id="", width=1920, height=1080, useragent="", fingerprint_seed=None):
+def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, timezone_id="", width=1920, height=1080, useragent="", fingerprint_seed=None, locale="", accept_language="", webrtc="Proxy IP"):
     """
     Create a per-profile copy of the OmniShield extension with unique config.js.
     Returns the path to the per-profile extension directory.
@@ -69,9 +75,9 @@ def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_ren
     # Copy the base extension template
     shutil.copytree(EXTENSION_TEMPLATE_DIR, ext_dir)
 
-    # Clear cached DNR rules and Service Worker caches in user_data_dir to guarantee fresh rule compilation
+    # Clear temporary browser cache only (never wipe user extensions or their Service Worker storage)
     default_dir = os.path.join(user_data_dir, 'Default')
-    for dname in ['DNR Extension Rules', 'Service Worker', 'Cache']:
+    for dname in ['Cache']:
         target_cache = os.path.join(default_dir, dname)
         if os.path.exists(target_cache):
             try:
@@ -83,27 +89,45 @@ def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_ren
     seed_str = fingerprint_seed or profile_id
     seeds = compute_profile_fingerprint_seeds(seed_str)
 
-    # Generate the per-profile config.js
+    # Generate the per-profile config.js inside an IIFE (zero top-level variable leaks)
     config_content = f"""// OmniShield Profile Config - Auto-generated for: {profile_id}
-const OMNI_CFG = {{
-  profileId: {json.dumps(profile_id)},
-  userAgent: {json.dumps(useragent)},
-  width: {int(width)},
-  height: {int(height)},
-  canvasR: {seeds['canvasR']},
-  canvasG: {seeds['canvasG']},
-  canvasB: {seeds['canvasB']},
-  canvasStride: {seeds['canvasStride']},
-  webglVendor: {json.dumps(webgl_vendor)},
-  webglRenderer: {json.dumps(webgl_renderer)},
-  cpuCores: {int(cpu_cores)},
-  memoryGb: {int(memory_gb)},
-  audioNoise: {seeds['audioNoise']:.13f},
-  timezone: {json.dumps(timezone_id)},
-  searchEngine: "duckduckgo"
-}};
-if (typeof self !== 'undefined') self.__OMNI_CONFIG = OMNI_CFG;
-if (typeof window !== 'undefined') window.__OMNI_CONFIG = OMNI_CFG;
+(function() {{
+  const cfg = {{
+    profileId: {json.dumps(profile_id)},
+    userAgent: {json.dumps(useragent)},
+    width: {int(width)},
+    height: {int(height)},
+    canvasR: {seeds['canvasR']},
+    canvasG: {seeds['canvasG']},
+    canvasB: {seeds['canvasB']},
+    canvasStride: {seeds['canvasStride']},
+    webglVendor: {json.dumps(webgl_vendor)},
+    webglRenderer: {json.dumps(webgl_renderer)},
+    cpuCores: {int(cpu_cores)},
+    memoryGb: {int(memory_gb)},
+    audioNoise: {seeds['audioNoise']:.13f},
+    timezone: {json.dumps(timezone_id)},
+    locale: {json.dumps(locale)},
+    acceptLanguage: {json.dumps(accept_language)},
+    webrtc: {json.dumps(webrtc)},
+    searchEngine: "duckduckgo"
+  }};
+  if (typeof self !== 'undefined' && typeof window === 'undefined') {{
+    self.__OMNI_CONFIG = cfg;
+  }}
+  if (typeof window !== 'undefined') {{
+    try {{
+      Object.defineProperty(window, '__omni_tmp_cfg__', {{
+        value: cfg,
+        configurable: true,
+        enumerable: false,
+        writable: true
+      }});
+    }} catch (e) {{
+      window.__OMNI_CONFIG = cfg;
+    }}
+  }}
+}})();
 """
 
     config_path = os.path.join(ext_dir, 'config.js')
@@ -120,7 +144,7 @@ if (typeof window !== 'undefined') window.__OMNI_CONFIG = OMNI_CFG;
     return ext_dir
 
 
-async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user="", proxy_pass="", profile_id="prof-1", timezone_id="America/New_York", fingerprint_seed=None):
+async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user="", proxy_pass="", profile_id="prof-1", timezone_id="America/New_York", fingerprint_seed=None, locale="", accept_language=""):
     """CDP fallback: Apply stealth overrides via Chrome DevTools Protocol websocket."""
     ws_url = None
     for attempt in range(30):  # 30 retries x 0.5s = 15s max wait
@@ -153,68 +177,106 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
     target_dpr = 2 if ('Macintosh' in ua_str or 'Mac OS X' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str) else 1
 
+    user_lang = locale.strip() if (locale and locale.strip()) else "en-US"
+    if accept_language and accept_language.strip():
+        user_langs = [l.split(';')[0].strip() for l in accept_language.split(',') if l.strip()]
+    else:
+        user_langs = [user_lang, 'en']
+    if user_lang not in user_langs:
+        user_langs.insert(0, user_lang)
+
     # Build the CDP injection payload (serves as a secondary reinforcement of extension injection)
     cdp_payload = f"""
     (function() {{
+      // Anti-Detection: Native Function.prototype.toString disguise
+      const nativeFnToString = Function.prototype.toString;
+      const nativeMap = new WeakMap();
+
+      function makeNative(fn, name) {{
+        if (name) {{
+          try {{ Object.defineProperty(fn, 'name', {{ value: name, configurable: true }}); }} catch(e) {{}}
+        }}
+        nativeMap.set(fn, name || (fn.name || ''));
+        return fn;
+      }}
+
+      try {{
+        const patchedToString = function() {{
+          if (nativeMap.has(this)) {{
+            const n = nativeMap.get(this);
+            return `function ${{n}}() {{ [native code] }}`;
+          }}
+          return nativeFnToString.call(this);
+        }};
+        makeNative(patchedToString, 'toString');
+        Function.prototype.toString = patchedToString;
+      }} catch(e) {{}}
+
       // Screen resolution & color depth spoofing reinforcement
       try {{
         const targetW = {int(width)};
         const targetH = {int(height)};
+        function makeScreenGetter(prop, val) {{
+          const g = function() {{ return val; }};
+          makeNative(g, `get ${{prop}}`);
+          return {{ get: g, configurable: true, enumerable: true }};
+        }}
+
         const screenDescriptors = {{
-          width: {{ get: function() {{ return targetW; }}, configurable: true, enumerable: true }},
-          height: {{ get: function() {{ return targetH; }}, configurable: true, enumerable: true }},
-          availWidth: {{ get: function() {{ return targetW; }}, configurable: true, enumerable: true }},
-          availHeight: {{ get: function() {{ return targetH - 40; }}, configurable: true, enumerable: true }},
-          colorDepth: {{ get: function() {{ return 24; }}, configurable: true, enumerable: true }},
-          pixelDepth: {{ get: function() {{ return 24; }}, configurable: true, enumerable: true }},
-          availLeft: {{ get: function() {{ return 0; }}, configurable: true, enumerable: true }},
-          availTop: {{ get: function() {{ return 0; }}, configurable: true, enumerable: true }}
+          width: makeScreenGetter('width', targetW),
+          height: makeScreenGetter('height', targetH),
+          availWidth: makeScreenGetter('availWidth', targetW),
+          availHeight: makeScreenGetter('availHeight', targetH - 40),
+          colorDepth: makeScreenGetter('colorDepth', 24),
+          pixelDepth: makeScreenGetter('pixelDepth', 24),
+          availLeft: makeScreenGetter('availLeft', 0),
+          availTop: makeScreenGetter('availTop', 0)
         }};
         if (typeof Screen !== 'undefined' && Screen.prototype) {{
           try {{ Object.defineProperties(Screen.prototype, screenDescriptors); }} catch(e) {{}}
         }}
-        if (typeof window !== 'undefined' && window.screen) {{
-          try {{ Object.defineProperties(window.screen, screenDescriptors); }} catch(e) {{}}
-        }}
         try {{
-          Object.defineProperty(window, 'devicePixelRatio', {{ get: () => {target_dpr}, configurable: true }});
-          Object.defineProperty(window, 'outerWidth', {{ get: () => targetW, configurable: true }});
-          Object.defineProperty(window, 'outerHeight', {{ get: () => targetH - 40, configurable: true }});
-          Object.defineProperty(window, 'innerWidth', {{ get: () => targetW, configurable: true }});
-          Object.defineProperty(window, 'innerHeight', {{ get: () => targetH - 85, configurable: true }});
+          const getDpr = function() {{ return {target_dpr}; }};
+          makeNative(getDpr, 'get devicePixelRatio');
+          Object.defineProperty(window, 'devicePixelRatio', {{ get: getDpr, configurable: true }});
+
+          const getOuterW = function() {{ return targetW; }};
+          makeNative(getOuterW, 'get outerWidth');
+          Object.defineProperty(window, 'outerWidth', {{ get: getOuterW, configurable: true }});
+
+          const getOuterH = function() {{ return targetH - 40; }};
+          makeNative(getOuterH, 'get outerHeight');
+          Object.defineProperty(window, 'outerHeight', {{ get: getOuterH, configurable: true }});
+
+          const getInnerW = function() {{ return targetW; }};
+          makeNative(getInnerW, 'get innerWidth');
+          Object.defineProperty(window, 'innerWidth', {{ get: getInnerW, configurable: true }});
+
+          const getInnerH = function() {{ return targetH - 85; }};
+          makeNative(getInnerH, 'get innerHeight');
+          Object.defineProperty(window, 'innerHeight', {{ get: getInnerH, configurable: true }});
         }} catch(e) {{}}
       }} catch(e) {{}}
 
-      // Screen orientation reinforcement — real desktop Chrome always reports
-      // 'landscape-primary' regardless of claimed device. A portrait phone/
-      // tablet profile with the desktop's real orientation is an easy,
-      // commonly-checked tell, so this ties it to the claimed resolution.
+      // Screen orientation reinforcement
       try {{
         const isPortrait = {int(height)} > {int(width)};
         const orientType = isPortrait ? 'portrait-primary' : 'landscape-primary';
         const orientAngle = isPortrait ? 0 : 90;
         if (window.screen && window.screen.orientation) {{
           try {{
-            Object.defineProperty(ScreenOrientation.prototype, 'type', {{ get: () => orientType, configurable: true }});
-            Object.defineProperty(ScreenOrientation.prototype, 'angle', {{ get: () => orientAngle, configurable: true }});
-          }} catch(e) {{}}
-          try {{
-            Object.defineProperty(window.screen.orientation, 'type', {{ get: () => orientType, configurable: true }});
-            Object.defineProperty(window.screen.orientation, 'angle', {{ get: () => orientAngle, configurable: true }});
+            Object.defineProperty(ScreenOrientation.prototype, 'type', {{ get: makeNative(() => orientType, 'get type'), configurable: true }});
+            Object.defineProperty(ScreenOrientation.prototype, 'angle', {{ get: makeNative(() => orientAngle, 'get angle'), configurable: true }});
           }} catch(e) {{}}
         }}
       }} catch(e) {{}}
 
-      // Pointer/hover media-feature reinforcement — real desktop Chrome
-      // reports pointer:fine / hover:hover from actual detected input
-      // hardware, independent of any touch-emulation flag. Any site
-      // checking window.matchMedia('(pointer: coarse)') etc. sees straight
-      // through a mobile profile without this.
+      // Pointer/hover media-feature reinforcement
       try {{
         const wantsTouchProfile = {json.dumps('Android' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str)};
         if (wantsTouchProfile && window.matchMedia) {{
           const origMatchMedia = window.matchMedia.bind(window);
-          window.matchMedia = function(query) {{
+          const patchedMM = function(query) {{
             const q = String(query).toLowerCase();
             const result = origMatchMedia(query);
             let forced = null;
@@ -233,33 +295,15 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }});
             }} catch(e) {{ return result; }}
           }};
+          makeNative(patchedMM, 'matchMedia');
+          window.matchMedia = patchedMM;
         }}
       }} catch(e) {{}}
 
-      // Hardware & Navigator spoofing reinforcement via CDP (Prototype Only, Anti-Deception)
+      // Hardware & Navigator spoofing reinforcement via CDP
       try {{
-        const nativeFnToString = Function.prototype.toString;
-        const nativeMap = new WeakMap();
-
-        function makeNative(fn, name) {{
-          if (name) {{
-            try {{ Object.defineProperty(fn, 'name', {{ value: name, configurable: true }}); }} catch(e) {{}}
-          }}
-          nativeMap.set(fn, name || (fn.name || ''));
-          return fn;
-        }}
-
-        try {{
-          const patchedToString = function() {{
-            if (nativeMap.has(this)) {{
-              const n = nativeMap.get(this);
-              return `function ${{n}}() {{ [native code] }}`;
-            }}
-            return nativeFnToString.call(this);
-          }};
-          makeNative(patchedToString, 'toString');
-          Function.prototype.toString = patchedToString;
-        }} catch(e) {{}}
+        const vendor = {json.dumps(webgl_vendor)};
+        const renderer = {json.dumps(webgl_renderer)};
 
         // Clean any own properties on navigator to ensure navigator.hasOwnProperty(p) === false
         const propsToClean = [
@@ -300,13 +344,14 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           defProtoGetter('platform', platStr);
           defProtoGetter('hardwareConcurrency', {int(cpu_cores)});
           defProtoGetter('deviceMemory', {int(memory_gb)});
-          defProtoGetter('languages', Object.freeze(['en-US', 'en']));
+          defProtoGetter('language', {json.dumps(user_lang)});
+          defProtoGetter('languages', Object.freeze({json.dumps(user_langs)}));
           defProtoGetter('userAgent', {json.dumps(ua_str)});
           defProtoGetter('appVersion', {json.dumps(ua_str.replace('Mozilla/', ''))});
           defProtoGetter('maxTouchPoints', (isAndroid || isIOS) ? 5 : 0);
           defProtoGetter('pdfViewerEnabled', !(isAndroid || isIOS));
 
-          // Native Plugins
+          // Native Plugins & MimeTypes
           function createPluginArray() {{
             if (isAndroid || isIOS) {{
               const arr = Object.create(PluginArray.prototype);
@@ -343,7 +388,41 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             return arr;
           }}
 
-          defProtoGetter('plugins', createPluginArray());
+          const pluginArr = createPluginArray();
+          defProtoGetter('plugins', pluginArr);
+
+          function createMimeTypeArray(pluginList) {{
+            if (isAndroid || isIOS) {{
+              const arr = Object.create(MimeTypeArray.prototype);
+              Object.defineProperty(arr, 'length', {{ value: 0 }});
+              arr.item = makeNative(function() {{ return null; }}, 'item');
+              arr.namedItem = makeNative(function() {{ return null; }}, 'namedItem');
+              Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'MimeTypeArray' }});
+              return arr;
+            }}
+            const pdfPlugin = (pluginList && pluginList[0]) || null;
+            const mimes = [
+              {{ type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format', enabledPlugin: pdfPlugin }},
+              {{ type: 'text/pdf', suffixes: 'pdf', description: 'Portable Document Format', enabledPlugin: pdfPlugin }}
+            ];
+            const arr = Object.create(MimeTypeArray.prototype);
+            mimes.forEach((m, idx) => {{
+              const mimeObj = Object.create(MimeType.prototype);
+              Object.defineProperty(mimeObj, 'type', {{ value: m.type, enumerable: true, configurable: true }});
+              Object.defineProperty(mimeObj, 'suffixes', {{ value: m.suffixes, enumerable: true, configurable: true }});
+              Object.defineProperty(mimeObj, 'description', {{ value: m.description, enumerable: true, configurable: true }});
+              Object.defineProperty(mimeObj, 'enabledPlugin', {{ value: m.enabledPlugin, enumerable: true, configurable: true }});
+              Object.defineProperty(mimeObj, Symbol.toStringTag, {{ value: 'MimeType' }});
+              arr[idx] = mimeObj;
+              arr[m.type] = mimeObj;
+            }});
+            Object.defineProperty(arr, 'length', {{ value: mimes.length }});
+            arr.item = makeNative(function(i) {{ return this[i] || null; }}, 'item');
+            arr.namedItem = makeNative(function(name) {{ return this[name] || null; }}, 'namedItem');
+            Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'MimeTypeArray' }});
+            return arr;
+          }}
+          defProtoGetter('mimeTypes', createMimeTypeArray(pluginArr));
 
           // Native userAgentData
           if (typeof NavigatorUAData !== 'undefined') {{
@@ -383,6 +462,13 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               res.platform = highEntropy.platform;
               return res;
             }}, 'getHighEntropyValues');
+            mockUAData.toJSON = makeNative(function() {{
+              return {{
+                brands: highEntropy.brands,
+                mobile: isMobile,
+                platform: osName
+              }};
+            }}, 'toJSON');
             Object.defineProperty(mockUAData, Symbol.toStringTag, {{ value: 'NavigatorUAData' }});
 
             defProtoGetter('userAgentData', mockUAData);
@@ -468,12 +554,6 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           WebGL2RenderingContext.prototype.getParameter = patchedGetParam2;
         }}
 
-        // Texture-compression support is a much harder tell than the vendor/
-        // renderer strings: real Windows GPUs (ANGLE/Direct3D) support
-        // S3TC/DXT; real mobile GPUs support ETC2/ASTC and essentially never
-        // S3TC. Claiming a mobile renderer string while still reporting
-        // desktop compression formats (or vice versa) is a direct giveaway
-        // regardless of what getParameter(37445/37446) says.
         const DESKTOP_ONLY_EXT = ['WEBGL_compressed_texture_s3tc', 'WEBGL_compressed_texture_s3tc_srgb', 'EXT_texture_compression_bptc', 'EXT_texture_compression_rgtc'];
         const MOBILE_ONLY_EXT = ['WEBGL_compressed_texture_etc', 'WEBGL_compressed_texture_etc1', 'WEBGL_compressed_texture_astc', 'WEBGL_compressed_texture_pvrtc'];
 
@@ -515,59 +595,182 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         function applyPixelNoise(data) {{
           if (!data || !data.length) return;
           const step = Math.max(4, pixelStride * 4);
+          const rDelta = {seeds['canvasR']};
+          const gDelta = {seeds['canvasG']};
+          const bDelta = {seeds['canvasB']};
           for (let i = 0; i < data.length; i += step) {{
             if (data[i + 3] > 0) {{
-              data[i]     = (data[i]     + rShift) & 255;
-              data[i + 1] = (data[i + 1] + gShift) & 255;
-              data[i + 2] = (data[i + 2] + bShift) & 255;
+              data[i]     = Math.max(0, Math.min(255, data[i]     + rDelta));
+              data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + gDelta));
+              data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + bDelta));
             }}
           }}
         }}
 
+        // WebGL readPixels hook
+        const origReadPixels = WebGLRenderingContext.prototype.readPixels;
+        const patchedReadPixels = function() {{
+          const res = origReadPixels.apply(this, arguments);
+          try {{
+            const pixels = arguments[6];
+            if (pixels && pixels.length) applyPixelNoise(pixels);
+          }} catch(e) {{}}
+          return res;
+        }};
+        makeNative(patchedReadPixels, 'readPixels');
+        WebGLRenderingContext.prototype.readPixels = patchedReadPixels;
+        if (window.WebGL2RenderingContext) {{
+          WebGL2RenderingContext.prototype.readPixels = patchedReadPixels;
+        }}
+
+        const hookedWins = new WeakSet();
+
         function hookCanvasWindow(targetWin) {{
-          if (!targetWin || targetWin.__omni_canvas_hooked) return;
-          try {{ targetWin.__omni_canvas_hooked = true; }} catch(e) {{}}
+          if (!targetWin || typeof targetWin !== 'object' || hookedWins.has(targetWin)) return;
+          try {{ hookedWins.add(targetWin); }} catch(e) {{}}
           try {{
             if (!targetWin.HTMLCanvasElement || !targetWin.CanvasRenderingContext2D) return;
             const origToDataURL = targetWin.HTMLCanvasElement.prototype.toDataURL;
             const origGetImageData = targetWin.CanvasRenderingContext2D.prototype.getImageData;
             const origToBlob = targetWin.HTMLCanvasElement.prototype.toBlob;
 
-            targetWin.HTMLCanvasElement.prototype.toDataURL = function() {{
+            const canvasContextMap = new WeakMap();
+            if (targetWin.HTMLCanvasElement.prototype.getContext) {{
+              const origGetCtx = targetWin.HTMLCanvasElement.prototype.getContext;
+              const patchedGetCtx = function(type) {{
+                const res = origGetCtx.apply(this, arguments);
+                if (res && typeof type === 'string') {{
+                  canvasContextMap.set(this, type.toLowerCase());
+                }}
+                return res;
+              }};
+              makeNative(patchedGetCtx, 'getContext');
+              targetWin.HTMLCanvasElement.prototype.getContext = patchedGetCtx;
+            }}
+
+            const patchedToDataURL = function() {{
               try {{
-                const ctx = this.getContext('2d');
-                if (ctx) {{
-                  const imgData = origGetImageData.call(ctx, 0, 0, this.width, this.height);
-                  if (imgData && imgData.data) {{
-                    applyPixelNoise(imgData.data);
-                    ctx.putImageData(imgData, 0, 0);
+                const ctxType = canvasContextMap.get(this);
+                if (this.width >= 16 && this.height >= 16) {{
+                  if (ctxType === '2d') {{
+                    const ctx = this.getContext('2d');
+                    if (ctx) {{
+                      const imgData = origGetImageData.call(ctx, 0, 0, this.width, this.height);
+                      if (imgData && imgData.data) {{
+                        applyPixelNoise(imgData.data);
+                        ctx.putImageData(imgData, 0, 0);
+                      }}
+                    }}
+                  }} else if (ctxType && ctxType.includes('webgl')) {{
+                    const off = targetWin.document.createElement('canvas');
+                    off.width = this.width;
+                    off.height = this.height;
+                    const offCtx = off.getContext('2d');
+                    offCtx.drawImage(this, 0, 0);
+                    const imgData = origGetImageData.call(offCtx, 0, 0, this.width, this.height);
+                    if (imgData && imgData.data) {{
+                      applyPixelNoise(imgData.data);
+                      offCtx.putImageData(imgData, 0, 0);
+                      return origToDataURL.apply(off, arguments);
+                    }}
                   }}
                 }}
               }} catch (err) {{}}
               return origToDataURL.apply(this, arguments);
             }};
+            makeNative(patchedToDataURL, 'toDataURL');
+            targetWin.HTMLCanvasElement.prototype.toDataURL = patchedToDataURL;
 
-            targetWin.CanvasRenderingContext2D.prototype.getImageData = function(x, y, w, h) {{
+            const patchedGetImageData = function(x, y, w, h) {{
               const res = origGetImageData.apply(this, arguments);
               try {{
-                if (res && res.data) applyPixelNoise(res.data);
+                if (res && res.data && w >= 16 && h >= 16) applyPixelNoise(res.data);
               }} catch (e) {{}}
               return res;
             }};
+            makeNative(patchedGetImageData, 'getImageData');
+            targetWin.CanvasRenderingContext2D.prototype.getImageData = patchedGetImageData;
 
-            targetWin.HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {{
+            const patchedToBlob = function(callback, type, quality) {{
               try {{
-                const ctx = this.getContext('2d');
-                if (ctx) {{
-                  const imgData = origGetImageData.call(ctx, 0, 0, this.width, this.height);
-                  if (imgData && imgData.data) {{
-                    applyPixelNoise(imgData.data);
-                    ctx.putImageData(imgData, 0, 0);
+                const ctxType = canvasContextMap.get(this);
+                if (this.width >= 16 && this.height >= 16) {{
+                  if (ctxType === '2d') {{
+                    const ctx = this.getContext('2d');
+                    if (ctx) {{
+                      const imgData = origGetImageData.call(ctx, 0, 0, this.width, this.height);
+                      if (imgData && imgData.data) {{
+                        applyPixelNoise(imgData.data);
+                        ctx.putImageData(imgData, 0, 0);
+                      }}
+                    }}
+                  }} else if (ctxType && ctxType.includes('webgl')) {{
+                    const off = targetWin.document.createElement('canvas');
+                    off.width = this.width;
+                    off.height = this.height;
+                    const offCtx = off.getContext('2d');
+                    offCtx.drawImage(this, 0, 0);
+                    const imgData = origGetImageData.call(offCtx, 0, 0, this.width, this.height);
+                    if (imgData && imgData.data) {{
+                      applyPixelNoise(imgData.data);
+                      offCtx.putImageData(imgData, 0, 0);
+                      return origToBlob.call(off, callback, type, quality);
+                    }}
                   }}
                 }}
               }} catch (err) {{}}
               return origToBlob.call(this, callback, type, quality);
             }};
+            makeNative(patchedToBlob, 'toBlob');
+            targetWin.HTMLCanvasElement.prototype.toBlob = patchedToBlob;
+
+            // OffscreenCanvas & OffscreenCanvasRenderingContext2D Hooking
+            if (targetWin.OffscreenCanvas && targetWin.OffscreenCanvas.prototype.convertToBlob) {{
+              const origConvertToBlob = targetWin.OffscreenCanvas.prototype.convertToBlob;
+              const patchedConvertToBlob = async function(options) {{
+                try {{
+                  if (this.width >= 16 && this.height >= 16) {{
+                    const ctxType = canvasContextMap.get(this);
+                    if (ctxType === '2d') {{
+                      const ctx = this.getContext('2d');
+                      if (ctx && targetWin.OffscreenCanvasRenderingContext2D) {{
+                        const imgData = targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData.call(ctx, 0, 0, this.width, this.height);
+                        if (imgData && imgData.data) {{
+                          applyPixelNoise(imgData.data);
+                          ctx.putImageData(imgData, 0, 0);
+                        }}
+                      }}
+                    }} else if (ctxType && ctxType.includes('webgl')) {{
+                      const off = new targetWin.OffscreenCanvas(this.width, this.height);
+                      const offCtx = off.getContext('2d');
+                      offCtx.drawImage(this, 0, 0);
+                      const imgData = offCtx.getImageData(0, 0, this.width, this.height);
+                      if (imgData && imgData.data) {{
+                        applyPixelNoise(imgData.data);
+                        offCtx.putImageData(imgData, 0, 0);
+                        return origConvertToBlob.call(off, options);
+                      }}
+                    }}
+                  }}
+                }} catch(e) {{}}
+                return origConvertToBlob.apply(this, arguments);
+              }};
+              makeNative(patchedConvertToBlob, 'convertToBlob');
+              targetWin.OffscreenCanvas.prototype.convertToBlob = patchedConvertToBlob;
+            }}
+
+            if (targetWin.OffscreenCanvasRenderingContext2D && targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData) {{
+              const origOffGetImageData = targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData;
+              const patchedOffGetImageData = function(x, y, w, h) {{
+                const res = origOffGetImageData.apply(this, arguments);
+                try {{
+                  if (res && res.data && w >= 16 && h >= 16) applyPixelNoise(res.data);
+                }} catch(e) {{}}
+                return res;
+              }};
+              makeNative(patchedOffGetImageData, 'getImageData');
+              targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData = patchedOffGetImageData;
+            }}
           }} catch (e) {{}}
         }}
 
@@ -578,29 +781,315 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           const descDoc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentDocument');
 
           if (descWin && descWin.get) {{
+            const origWinGet = descWin.get;
+            const patchedWinGet = function() {{
+              const w = origWinGet.call(this);
+              if (w) hookCanvasWindow(w);
+              return w;
+            }};
+            makeNative(patchedWinGet, 'get contentWindow');
             Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {{
-              get: function() {{
-                const w = descWin.get.call(this);
-                if (w) hookCanvasWindow(w);
-                return w;
-              }},
+              get: patchedWinGet,
               configurable: true,
               enumerable: true
             }});
           }}
 
           if (descDoc && descDoc.get) {{
+            const origDocGet = descDoc.get;
+            const patchedDocGet = function() {{
+              const d = origDocGet.call(this);
+              if (d && d.defaultView) hookCanvasWindow(d.defaultView);
+              return d;
+            }};
+            makeNative(patchedDocGet, 'get contentDocument');
             Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {{
-              get: function() {{
-                const d = descDoc.get.call(this);
-                if (d && d.defaultView) hookCanvasWindow(d.defaultView);
-                return d;
-              }},
+              get: patchedDocGet,
               configurable: true,
               enumerable: true
             }});
           }}
         }} catch (e) {{}}
+
+        // Document focus alignment
+        try {{
+          if (typeof document !== 'undefined' && document.hasFocus) {{
+            const origHasFocus = document.hasFocus;
+            const patchedHasFocus = function() {{ return true; }};
+            makeNative(patchedHasFocus, 'hasFocus');
+            document.hasFocus = patchedHasFocus;
+          }}
+        }} catch(e) {{}}
+
+        // Notification permission alignment
+        try {{
+          if (typeof window !== 'undefined' && window.Notification) {{
+            const getNotifPerm = function() {{ return 'default'; }};
+            makeNative(getNotifPerm, 'get permission');
+            Object.defineProperty(window.Notification, 'permission', {{
+              get: getNotifPerm,
+              configurable: true,
+              enumerable: true
+            }});
+
+            if (window.Notification.requestPermission) {{
+              const patchedReqPerm = async function() {{ return 'default'; }};
+              makeNative(patchedReqPerm, 'requestPermission');
+              window.Notification.requestPermission = patchedReqPerm;
+            }}
+          }}
+        }} catch(e) {{}}
+
+        // Comprehensive Intl timezone and locale synchronization
+        try {{
+          const targetLoc = {json.dumps(user_lang)};
+          const targetTz = {json.dumps(timezone_id)};
+
+          const intlConstructors = [
+            Intl.DateTimeFormat,
+            Intl.NumberFormat,
+            Intl.Collator,
+            Intl.PluralRules,
+            Intl.RelativeTimeFormat,
+            Intl.ListFormat,
+            Intl.Segmenter,
+            Intl.DisplayNames
+          ].filter(Boolean);
+
+          for (const ctor of intlConstructors) {{
+            if (ctor && ctor.prototype && ctor.prototype.resolvedOptions) {{
+              const origRes = ctor.prototype.resolvedOptions;
+              const patchedRes = function() {{
+                const r = origRes.apply(this, arguments);
+                if (r) {{
+                  if (targetLoc && targetLoc.trim()) r.locale = targetLoc.trim();
+                  if (ctor === Intl.DateTimeFormat && targetTz && targetTz.trim()) r.timeZone = targetTz.trim();
+                }}
+                return r;
+              }};
+              makeNative(patchedRes, 'resolvedOptions');
+              ctor.prototype.resolvedOptions = patchedRes;
+            }}
+          }}
+        }} catch(e) {{}}
+
+        // Date timezone math
+        if ({json.dumps(timezone_id)} && {json.dumps(timezone_id)}.trim()) {{
+          try {{
+            const targetTz = {json.dumps(timezone_id)}.trim();
+            const origGetTimezoneOffset = Date.prototype.getTimezoneOffset;
+            const patchedGetTimezoneOffset = function() {{
+              try {{
+                const utc = new Date(this.toLocaleString('en-US', {{ timeZone: 'UTC' }}));
+                const target = new Date(this.toLocaleString('en-US', {{ timeZone: targetTz }}));
+                const diff = Math.round((utc - target) / 60000);
+                if (!isNaN(diff)) return diff;
+              }} catch(e) {{}}
+              return origGetTimezoneOffset.apply(this, arguments);
+            }};
+            makeNative(patchedGetTimezoneOffset, 'getTimezoneOffset');
+            Date.prototype.getTimezoneOffset = patchedGetTimezoneOffset;
+          }} catch(e) {{}}
+        }}
+
+        // WebGPU Adapter & Architecture spoofing
+        try {{
+          if (navigator.gpu && navigator.gpu.requestAdapter) {{
+            const origRequestAdapter = navigator.gpu.requestAdapter;
+            const patchedRequestAdapter = async function(options) {{
+              const adapter = await origRequestAdapter.apply(this, arguments);
+              if (!adapter) return adapter;
+
+              const fakeInfo = {{
+                vendor: {json.dumps(webgl_vendor)}.toLowerCase().includes('nvidia') ? 'nvidia' : ({json.dumps(webgl_vendor)}.toLowerCase().includes('apple') ? 'apple' : ({json.dumps(webgl_vendor)}.toLowerCase().includes('intel') ? 'intel' : 'google')),
+                architecture: archStr === 'arm' ? 'arm64' : 'x86_64',
+                device: {json.dumps(webgl_renderer)},
+                description: {json.dumps(webgl_renderer)},
+                [Symbol.toStringTag]: 'GPUAdapterInfo'
+              }};
+
+              if (window.GPUAdapterInfo && window.GPUAdapterInfo.prototype) {{
+                Object.setPrototypeOf(fakeInfo, window.GPUAdapterInfo.prototype);
+              }}
+
+              if (window.GPUAdapter && window.GPUAdapter.prototype) {{
+                if (window.GPUAdapter.prototype.requestAdapterInfo) {{
+                  const patchedReqInfo = async function() {{ return fakeInfo; }};
+                  makeNative(patchedReqInfo, 'requestAdapterInfo');
+                  window.GPUAdapter.prototype.requestAdapterInfo = patchedReqInfo;
+                }}
+                if ('info' in window.GPUAdapter.prototype) {{
+                  try {{
+                    const getInfo = function() {{ return fakeInfo; }};
+                    makeNative(getInfo, 'get info');
+                    Object.defineProperty(window.GPUAdapter.prototype, 'info', {{
+                      get: getInfo,
+                      configurable: true,
+                      enumerable: true
+                    }});
+                  }} catch(e) {{}}
+                }}
+              }}
+              return adapter;
+            }};
+            makeNative(patchedRequestAdapter, 'requestAdapter');
+            navigator.gpu.requestAdapter = patchedRequestAdapter;
+          }}
+        }} catch(e) {{}}
+
+        // window.chrome object integrity disguise
+        try {{
+          if (typeof window !== 'undefined') {{
+            if (!window.chrome) window.chrome = {{}};
+            if (!window.chrome.app) {{
+              window.chrome.app = {{
+                isInstalled: false,
+                InstallState: {{ DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' }},
+                RunningState: {{ CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' }},
+                getIsInstalled: makeNative(function() {{ return false; }}, 'getIsInstalled'),
+                getDetails: makeNative(function() {{ return null; }}, 'getDetails'),
+                installState: makeNative(function() {{}}, 'installState')
+              }};
+            }}
+            if (!window.chrome.csi) {{
+              const csiFn = function() {{
+                return {{
+                  startE: Math.floor(performance.timeOrigin || (performance.timing ? performance.timing.navigationStart : Date.now())),
+                  onloadT: Math.floor((performance.timing ? performance.timing.loadEventEnd : Date.now())),
+                  pageT: (performance.now ? performance.now() : 0),
+                  tran: 15
+                }};
+              }};
+              makeNative(csiFn, 'csi');
+              window.chrome.csi = csiFn;
+            }}
+            if (!window.chrome.loadTimes) {{
+              const loadTimesFn = function() {{
+                const t = performance.timing || {{}};
+                const origin = performance.timeOrigin || t.navigationStart || Date.now();
+                return {{
+                  requestTime: origin / 1000,
+                  startLoadTime: origin / 1000,
+                  commitLoadTime: (origin + 45) / 1000,
+                  finishDocumentLoadTime: (origin + 120) / 1000,
+                  finishLoadTime: (origin + 180) / 1000,
+                  firstPaintTime: (origin + 70) / 1000,
+                  firstPaintAfterLoadTime: 0,
+                  navigationType: 'Other',
+                  wasFetchedViaSpdy: true,
+                  wasNpnNegotiated: true,
+                  npnNegotiatedProtocol: 'h2',
+                  wasAlternateProtocolAvailable: false,
+                  connectionInfo: 'h2'
+                }};
+              }};
+              makeNative(loadTimesFn, 'loadTimes');
+              window.chrome.loadTimes = loadTimesFn;
+            }}
+          }}
+        }} catch(e) {{}}
+
+        // Error call-stack leak sanitization
+        try {{
+          const descStack = Object.getOwnPropertyDescriptor(Error.prototype, 'stack');
+          if (descStack && descStack.get) {{
+            const origStackGet = descStack.get;
+            const patchedStackGet = function() {{
+              const s = origStackGet.call(this);
+              if (typeof s === 'string') {{
+                return s.split('\\n').filter(l => !l.includes('chrome-extension://') && !l.includes('inject.js')).join('\\n');
+              }}
+              return s;
+            }};
+            makeNative(patchedStackGet, 'get stack');
+            Object.defineProperty(Error.prototype, 'stack', {{
+              get: patchedStackGet,
+              set: descStack.set,
+              configurable: true
+            }});
+          }}
+        }} catch(e) {{}}
+
+        // Performance timeline sanitizer
+        try {{
+          if (typeof Performance !== 'undefined' && Performance.prototype) {{
+            function sanitizePerf(entries) {{
+              if (!entries || !entries.length) return entries;
+              return entries.filter(e => {{
+                const n = (e && e.name) ? String(e.name) : '';
+                return !n.includes('chrome-extension://') && !n.includes('moz-extension://') && !n.includes('inject.js');
+              }});
+            }}
+            if (Performance.prototype.getEntries) {{
+              const origGet = Performance.prototype.getEntries;
+              const pGet = function() {{ return sanitizePerf(origGet.apply(this, arguments)); }};
+              makeNative(pGet, 'getEntries');
+              Performance.prototype.getEntries = pGet;
+            }}
+            if (Performance.prototype.getEntriesByType) {{
+              const origGetT = Performance.prototype.getEntriesByType;
+              const pGetT = function(type) {{ return sanitizePerf(origGetT.apply(this, arguments)); }};
+              makeNative(pGetT, 'getEntriesByType');
+              Performance.prototype.getEntriesByType = pGetT;
+            }}
+            if (Performance.prototype.getEntriesByName) {{
+              const origGetN = Performance.prototype.getEntriesByName;
+              const pGetN = function(name, type) {{
+                if (typeof name === 'string' && (name.includes('chrome-extension://') || name.includes('inject.js'))) return [];
+                return sanitizePerf(origGetN.apply(this, arguments));
+              }};
+              makeNative(pGetN, 'getEntriesByName');
+              Performance.prototype.getEntriesByName = pGetN;
+            }}
+          }}
+        }} catch(e) {{}}
+
+        // NetworkInformation API
+        try {{
+          if (!isIOS) {{
+            const netInfo = {{
+              downlink: 10,
+              effectiveType: '4g',
+              rtt: 50,
+              saveData: false,
+              onchange: null,
+              addEventListener: makeNative(function() {{}}, 'addEventListener'),
+              removeEventListener: makeNative(function() {{}}, 'removeEventListener'),
+              dispatchEvent: makeNative(function() {{ return true; }}, 'dispatchEvent'),
+              [Symbol.toStringTag]: 'NetworkInformation'
+            }};
+            if (window.NetworkInformation && window.NetworkInformation.prototype) {{
+              Object.setPrototypeOf(netInfo, window.NetworkInformation.prototype);
+              const defNetGetter = (p, v) => {{
+                const g = function() {{ return v; }};
+                makeNative(g, `get ${{p}}`);
+                try {{
+                  Object.defineProperty(window.NetworkInformation.prototype, p, {{
+                    get: g,
+                    configurable: true,
+                    enumerable: true
+                  }});
+                }} catch(e) {{}}
+              }};
+              defNetGetter('downlink', 10);
+              defNetGetter('effectiveType', '4g');
+              defNetGetter('rtt', 50);
+              defNetGetter('saveData', false);
+            }}
+            if (window.Navigator && window.Navigator.prototype) {{
+              const getConn = function() {{ return netInfo; }};
+              makeNative(getConn, 'get connection');
+              Object.defineProperty(window.Navigator.prototype, 'connection', {{
+                get: getConn,
+                configurable: true,
+                enumerable: true
+              }});
+            }}
+            if (navigator.hasOwnProperty('connection')) {{
+              delete navigator.connection;
+            }}
+          }}
+        }} catch(e) {{}}
       }} catch(e) {{}}
     }})();
     """
@@ -611,40 +1100,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             await ws.send(json.dumps({"id": 1, "method": "Page.enable"}))
             await ws.recv()
 
-            # 2. Proxy Auth handling
-            if proxy_user and proxy_pass:
-                await ws.send(json.dumps({
-                    "id": 6,
-                    "method": "Fetch.enable",
-                    "params": { "handleAuthRequests": True }
-                }))
-                await ws.recv()
-
-                async def persistent_proxy_auth_loop():
-                    while True:
-                        try:
-                            msg = await ws.recv()
-                            data = json.loads(msg)
-                            if data.get('method') == 'Fetch.authRequired':
-                                req_id = data['params']['requestId']
-                                await ws.send(json.dumps({
-                                    "id": 7,
-                                    "method": "Fetch.continueWithAuth",
-                                    "params": {
-                                        "requestId": req_id,
-                                        "authChallengeResponse": {
-                                            "response": "ProvideCredentials",
-                                            "username": proxy_user,
-                                            "password": proxy_pass
-                                        }
-                                    }
-                                }))
-                        except Exception:
-                            break
-
-                asyncio.create_task(persistent_proxy_auth_loop())
-
-            # 3. Inject CDP reinforcement script for future navigations
+            # 2. Inject CDP reinforcement script for future navigations
             await ws.send(json.dumps({
                 "id": 2,
                 "method": "Page.addScriptToEvaluateOnNewDocument",
@@ -678,10 +1134,11 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             chrome_major = chrome_m.group(1) if chrome_m else '150'
             chrome_full = f"{chrome_major}.{chrome_m.group(2)}" if chrome_m else '150.0.0.0'
 
+            eff_accept_lang = accept_language.strip() if (accept_language and accept_language.strip()) else ("en-US,en;q=0.9" if not locale else f"{locale},en;q=0.9")
             # Build unified UA & Client Hints payload
             ua_override_params = {
                 "userAgent": ua_str,
-                "acceptLanguage": "en-US,en;q=0.9",
+                "acceptLanguage": eff_accept_lang,
                 "platform": cdp_platform,
                 "userAgentMetadata": {
                     "brands": [
@@ -761,16 +1218,17 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 except Exception:
                     pass
 
-            # 5c. Timezone Override via CDP (normalizes Asia/Calcutta to Asia/Kolkata, defaults to Asia/Kolkata for host IP alignment)
-            eff_tz = timezone_id.strip() if (timezone_id and timezone_id.strip()) else "Asia/Kolkata"
-            if eff_tz == 'Asia/Calcutta':
-                eff_tz = 'Asia/Kolkata'
-            await ws.send(json.dumps({
-                "id": 8,
-                "method": "Emulation.setTimezoneOverride",
-                "params": { "timezoneId": eff_tz }
-            }))
-            await ws.recv()
+            # 5c. Timezone Override via CDP (normalizes Asia/Calcutta to Asia/Kolkata if provided)
+            if timezone_id and timezone_id.strip():
+                eff_tz = timezone_id.strip()
+                if eff_tz == 'Asia/Calcutta':
+                    eff_tz = 'Asia/Kolkata'
+                await ws.send(json.dumps({
+                    "id": 8,
+                    "method": "Emulation.setTimezoneOverride",
+                    "params": { "timezoneId": eff_tz }
+                }))
+                await ws.recv()
 
             # 6. Navigate to target URL (triggers extension + CDP scripts on fresh load)
             await ws.send(json.dumps({
@@ -818,7 +1276,7 @@ def sanitize_user_agent(ua, os_hint=""):
     return ua
 
 
-def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str, port=9222, url="https://browserleaks.com/canvas", webgl_vendor="Google Inc. (NVIDIA)", webgl_renderer="ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", cpu_cores=8, memory_gb=16, proxy_user="", proxy_pass="", timezone_id="America/New_York", custom_extensions=None, fingerprint_seed=None):
+def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str, port=9222, url="https://browserleaks.com/canvas", webgl_vendor="Google Inc. (NVIDIA)", webgl_renderer="ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", cpu_cores=8, memory_gb=16, proxy_user="", proxy_pass="", timezone_id="America/New_York", custom_extensions=None, fingerprint_seed=None, locale="", accept_language="", webrtc="Proxy IP"):
     useragent = sanitize_user_agent(useragent, name)
     print(f"[Stealth Engine] launch_stealth_profile called for: {name} (proxy={bool(proxy_str)}, tz={timezone_id}, seed={fingerprint_seed})", flush=True)
 
@@ -826,13 +1284,14 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
     user_data_dir = os.path.join(PROFILES_DIR, f"{profile_id}_{safe_name}")
     os.makedirs(user_data_dir, exist_ok=True)
 
-    # Clean up old SingletonLock if leftover from previous crashed Chrome instance
-    lockfile = os.path.join(user_data_dir, 'SingletonLock')
-    if os.path.exists(lockfile) or os.path.islink(lockfile):
-        try:
-            os.remove(lockfile)
-        except Exception:
-            pass
+    # Clean up old Singleton lockfiles if leftover from previous crashed Chrome instance
+    for s_file in ['SingletonLock', 'SingletonCookie', 'SingletonSocket']:
+        lockfile = os.path.join(user_data_dir, s_file)
+        if os.path.exists(lockfile) or os.path.islink(lockfile):
+            try:
+                os.remove(lockfile)
+            except Exception:
+                pass
 
     # Prepare per-profile extension with unique fingerprint config
     ext_dir = prepare_profile_extension(
@@ -846,7 +1305,10 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         width=width,
         height=height,
         useragent=useragent,
-        fingerprint_seed=fingerprint_seed
+        fingerprint_seed=fingerprint_seed,
+        locale=locale,
+        accept_language=accept_language,
+        webrtc=webrtc
     )
 
     # Configure search engine defaults in profile Preferences and database
@@ -873,6 +1335,14 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
             "prepopulate_id": 1,
             "encoding": "UTF-8"
         }
+
+        # Pre-enable Developer Mode so users can load unpacked external extensions smoothly
+        if 'extensions' not in prefs or not isinstance(prefs.get('extensions'), dict):
+            prefs['extensions'] = {}
+        if 'ui' not in prefs['extensions'] or not isinstance(prefs['extensions'].get('ui'), dict):
+            prefs['extensions']['ui'] = {}
+        prefs['extensions']['ui']['developer_mode'] = True
+
         with open(pref_path, 'w', encoding='utf-8') as pf:
             json.dump(prefs, pf, indent=2)
 
@@ -896,9 +1366,18 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         print(f"[Stealth Engine] Note on search config: {e}", flush=True)
 
     # Build Chrome flags
-    import random
     if port == 9222:
-        port = random.randint(9200, 9500)
+        import socket
+        allocated = None
+        for p in range(9200, 9500):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('127.0.0.1', p))
+                    allocated = p
+                    break
+            except OSError:
+                continue
+        port = allocated if allocated else 9222
 
     custom_exts = custom_extensions or []
     valid_custom_exts = [e.strip() for e in custom_exts if isinstance(e, str) and e.strip() and os.path.exists(e.strip())]
@@ -911,7 +1390,8 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         f'--remote-debugging-port={port}',
         f'--window-size={width},{height}',
         f'--load-extension={ext_list_str}',
-        f'--disable-extensions-except={ext_list_str}',
+        '--extension-mime-request-handling=always-prompt-for-install',
+        '--enable-extensions',
         '--new-window',
         '--no-first-run',
         '--no-default-browser-check',
@@ -929,6 +1409,9 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
                 '--touch-events=enabled',
                 '--enable-viewport'
             ])
+
+    if locale and locale.strip():
+        chrome_args.append(f'--lang={locale.strip()}')
 
     active_bridge = None
     if proxy_str:
@@ -954,13 +1437,21 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         chrome_args.append(url)
 
     print(f"[Stealth Engine] Spawning Chrome: {CHROME_EXEC}", flush=True)
+    chrome_env = os.environ.copy()
+    if timezone_id and timezone_id.strip():
+        eff_tz = timezone_id.strip()
+        if eff_tz == 'Asia/Calcutta':
+            eff_tz = 'Asia/Kolkata'
+        chrome_env['TZ'] = eff_tz
+
     if sys.platform == 'win32':
         proc = subprocess.Popen(
             chrome_args,
+            env=chrome_env,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
         )
     else:
-        proc = subprocess.Popen(chrome_args)
+        proc = subprocess.Popen(chrome_args, env=chrome_env)
 
     # Apply CDP stealth overrides as a secondary reinforcement
     print(f"[Stealth Engine] Waiting for CDP connection on port {port} (extension already active)...", flush=True)
@@ -971,12 +1462,12 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
             running_loop = None
 
         if running_loop and running_loop.is_running():
-            asyncio.create_task(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id, fingerprint_seed=fingerprint_seed))
+            asyncio.create_task(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id, fingerprint_seed=fingerprint_seed, locale=locale, accept_language=accept_language))
         else:
             new_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(new_loop)
             try:
-                new_loop.run_until_complete(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id, fingerprint_seed=fingerprint_seed))
+                new_loop.run_until_complete(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id, fingerprint_seed=fingerprint_seed, locale=locale, accept_language=accept_language))
             finally:
                 new_loop.close()
     except Exception as e:

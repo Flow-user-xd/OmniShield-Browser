@@ -185,8 +185,17 @@ def load_profiles():
         try:
             with open(PROFILES_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error loading {PROFILES_FILE}: {e}. Checking backup file...")
+            bak_file = PROFILES_FILE + '.bak'
+            if os.path.exists(bak_file):
+                try:
+                    with open(bak_file, 'r', encoding='utf-8') as bf:
+                        data = json.load(bf)
+                        logger.info(f"Successfully restored profiles from {bak_file}")
+                        return data
+                except Exception as be:
+                    logger.error(f"Failed to load backup {bak_file}: {be}")
     return DEFAULT_PROFILES
 
 import urllib.request
@@ -211,7 +220,7 @@ def resolve_ip_geolocation(ip_address):
     ip_clean = str(ip_address).strip()
     if not ip_clean or ip_clean in ['127.0.0.1', 'localhost', '0.0.0.0', '::1']:
         return {
-            'timezone': 'Asia/Kolkata',
+            'timezone': 'UTC',
             'location': '🌐 Direct Network',
             'country': 'Direct',
             'countryCode': 'LOCAL',
@@ -340,10 +349,10 @@ def resolve_ip_geolocation(ip_address):
         pass
 
     fallback_result = {
-        'timezone': 'Asia/Kolkata',
+        'timezone': 'UTC',
         'location': f"🌐 Proxy ({ip_clean})",
         'country': 'Proxy Host',
-        'countryCode': 'IN',
+        'countryCode': 'US',
         'city': 'Proxy',
         'flag': '🌐',
         'lat': 0.0,
@@ -362,31 +371,71 @@ def save_profiles(profiles_data):
             ip = proxy.get('ip', '').strip()
             geo = resolve_ip_geolocation(ip)
             if geo:
-                proxy['timezone'] = geo.get('timezone') or proxy.get('timezone') or 'Asia/Kolkata'
+                proxy['timezone'] = geo.get('timezone') or proxy.get('timezone') or 'UTC'
                 proxy['locale'] = geo.get('locale') or proxy.get('locale') or 'en-US'
                 proxy['acceptLanguage'] = geo.get('acceptLanguage') or proxy.get('acceptLanguage') or 'en-US,en;q=0.9'
-                proxy['countryCode'] = geo.get('countryCode', 'IN')
+                proxy['countryCode'] = geo.get('countryCode', 'US')
                 proxy['country'] = geo.get('country', '')
                 proxy['city'] = geo.get('city', '')
                 proxy['location'] = geo.get('location') or f"🌐 {ip}:{proxy.get('port', '')}"
                 if geo.get('lat'): proxy['lat'] = geo['lat']
                 if geo.get('lng'): proxy['lng'] = geo['lng']
 
-    with open(PROFILES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(profiles_data, f, indent=2)
+    tmp_file = PROFILES_FILE + '.tmp'
+    bak_file = PROFILES_FILE + '.bak'
+    try:
+        with open(tmp_file, 'w', encoding='utf-8') as f:
+            json.dump(profiles_data, f, indent=2)
+        if os.path.exists(PROFILES_FILE):
+            try:
+                import shutil
+                shutil.copyfile(PROFILES_FILE, bak_file)
+            except Exception:
+                pass
+        os.replace(tmp_file, PROFILES_FILE)
+    except Exception as e:
+        logger.error(f"Atomic save error for {PROFILES_FILE}: {e}")
+        try:
+            with open(PROFILES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(profiles_data, f, indent=2)
+        except Exception:
+            pass
 
 def load_proxies():
     if os.path.exists(PROXIES_FILE):
         try:
             with open(PROXIES_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except Exception as e:
+            bak_file = PROXIES_FILE + '.bak'
+            if os.path.exists(bak_file):
+                try:
+                    with open(bak_file, 'r', encoding='utf-8') as bf:
+                        return json.load(bf)
+                except Exception:
+                    pass
     return []
 
 def save_proxies(proxies_data):
-    with open(PROXIES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(proxies_data, f, indent=2)
+    tmp_file = PROXIES_FILE + '.tmp'
+    bak_file = PROXIES_FILE + '.bak'
+    try:
+        with open(tmp_file, 'w', encoding='utf-8') as f:
+            json.dump(proxies_data, f, indent=2)
+        if os.path.exists(PROXIES_FILE):
+            try:
+                import shutil
+                shutil.copyfile(PROXIES_FILE, bak_file)
+            except Exception:
+                pass
+        os.replace(tmp_file, PROXIES_FILE)
+    except Exception as e:
+        logger.error(f"Atomic save error for {PROXIES_FILE}: {e}")
+        try:
+            with open(PROXIES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(proxies_data, f, indent=2)
+        except Exception:
+            pass
 
 def get_profile_cookies_db(profile_id):
     if not profile_id:
@@ -437,78 +486,80 @@ def import_profile_cookies(profile_id, cookie_input):
     now_chrome = int((now_unix + 11644473600) * 1000000)
 
     import sqlite3
-    conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS cookies(
-            creation_utc INTEGER NOT NULL,
-            host_key TEXT NOT NULL,
-            top_frame_site_key TEXT NOT NULL DEFAULT '',
-            name TEXT NOT NULL,
-            value TEXT NOT NULL,
-            encrypted_value BLOB NOT NULL DEFAULT '',
-            path TEXT NOT NULL DEFAULT '/',
-            expires_utc INTEGER NOT NULL DEFAULT 0,
-            is_secure INTEGER NOT NULL DEFAULT 0,
-            is_httponly INTEGER NOT NULL DEFAULT 0,
-            last_access_utc INTEGER NOT NULL DEFAULT 0,
-            has_expires INTEGER NOT NULL DEFAULT 1,
-            is_persistent INTEGER NOT NULL DEFAULT 1,
-            priority INTEGER NOT NULL DEFAULT 1,
-            samesite INTEGER NOT NULL DEFAULT -1,
-            source_scheme INTEGER NOT NULL DEFAULT 2,
-            source_port INTEGER NOT NULL DEFAULT 443,
-            is_same_party INTEGER NOT NULL DEFAULT 0,
-            last_update_utc INTEGER NOT NULL DEFAULT 0,
-            source_type INTEGER NOT NULL DEFAULT 0
-        )
-    ''')
+    conn = sqlite3.connect(db_path, timeout=5.0)
+    try:
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS cookies(
+                creation_utc INTEGER NOT NULL,
+                host_key TEXT NOT NULL,
+                top_frame_site_key TEXT NOT NULL DEFAULT '',
+                name TEXT NOT NULL,
+                value TEXT NOT NULL,
+                encrypted_value BLOB NOT NULL DEFAULT '',
+                path TEXT NOT NULL DEFAULT '/',
+                expires_utc INTEGER NOT NULL DEFAULT 0,
+                is_secure INTEGER NOT NULL DEFAULT 0,
+                is_httponly INTEGER NOT NULL DEFAULT 0,
+                last_access_utc INTEGER NOT NULL DEFAULT 0,
+                has_expires INTEGER NOT NULL DEFAULT 1,
+                is_persistent INTEGER NOT NULL DEFAULT 1,
+                priority INTEGER NOT NULL DEFAULT 1,
+                samesite INTEGER NOT NULL DEFAULT -1,
+                source_scheme INTEGER NOT NULL DEFAULT 2,
+                source_port INTEGER NOT NULL DEFAULT 443,
+                is_same_party INTEGER NOT NULL DEFAULT 0,
+                last_update_utc INTEGER NOT NULL DEFAULT 0,
+                source_type INTEGER NOT NULL DEFAULT 0
+            )
+        ''')
 
-    cur.execute("PRAGMA table_info(cookies)")
-    existing_cols = set(r[1] for r in cur.fetchall())
+        cur.execute("PRAGMA table_info(cookies)")
+        existing_cols = set(r[1] for r in cur.fetchall())
 
-    count = 0
-    for c in parsed:
-        name = c.get('name') or c.get('Name') or ''
-        val = c.get('value') or c.get('Value') or ''
-        dom = c.get('domain') or c.get('Domain') or c.get('host') or ''
-        path = c.get('path') or c.get('Path') or '/'
-        sec = 1 if c.get('secure') or c.get('is_secure') else 0
-        httponly = 1 if c.get('httpOnly') or c.get('is_httponly') else 0
-        exp = c.get('expirationDate') or c.get('expires') or 0
-        exp_chrome = int((float(exp) + 11644473600) * 1000000) if exp and float(exp) > 0 else 0
+        count = 0
+        for c in parsed:
+            name = c.get('name') or c.get('Name') or ''
+            val = c.get('value') or c.get('Value') or ''
+            dom = c.get('domain') or c.get('Domain') or c.get('host') or ''
+            path = c.get('path') or c.get('Path') or '/'
+            sec = 1 if c.get('secure') or c.get('is_secure') else 0
+            httponly = 1 if c.get('httpOnly') or c.get('is_httponly') else 0
+            exp = c.get('expirationDate') or c.get('expires') or 0
+            exp_chrome = int((float(exp) + 11644473600) * 1000000) if exp and float(exp) > 0 else 0
 
-        if name and dom:
-            col_map = {
-                'creation_utc': now_chrome,
-                'host_key': dom,
-                'top_frame_site_key': '',
-                'name': name,
-                'value': val,
-                'encrypted_value': b'',
-                'path': path,
-                'expires_utc': exp_chrome,
-                'is_secure': sec,
-                'is_httponly': httponly,
-                'last_access_utc': now_chrome,
-                'has_expires': 1 if exp_chrome > 0 else 0,
-                'is_persistent': 1,
-                'priority': 1,
-                'samesite': -1,
-                'source_scheme': 2,
-                'source_port': 443,
-                'last_update_utc': now_chrome,
-                'source_type': 0,
-                'has_cross_site_ancestor': 0
-            }
-            cols_to_insert = [k for k in col_map if k in existing_cols]
-            placeholders = ', '.join(['?'] * len(cols_to_insert))
-            sql = f"INSERT INTO cookies ({', '.join(cols_to_insert)}) VALUES ({placeholders})"
-            cur.execute(sql, [col_map[k] for k in cols_to_insert])
-            count += 1
+            if name and dom:
+                col_map = {
+                    'creation_utc': now_chrome,
+                    'host_key': dom,
+                    'top_frame_site_key': '',
+                    'name': name,
+                    'value': val,
+                    'encrypted_value': b'',
+                    'path': path,
+                    'expires_utc': exp_chrome,
+                    'is_secure': sec,
+                    'is_httponly': httponly,
+                    'last_access_utc': now_chrome,
+                    'has_expires': 1 if exp_chrome > 0 else 0,
+                    'is_persistent': 1,
+                    'priority': 1,
+                    'samesite': -1,
+                    'source_scheme': 2,
+                    'source_port': 443,
+                    'last_update_utc': now_chrome,
+                    'source_type': 0,
+                    'has_cross_site_ancestor': 0
+                }
+                cols_to_insert = [k for k in col_map if k in existing_cols]
+                placeholders = ', '.join(['?'] * len(cols_to_insert))
+                sql = f"INSERT INTO cookies ({', '.join(cols_to_insert)}) VALUES ({placeholders})"
+                cur.execute(sql, [col_map[k] for k in cols_to_insert])
+                count += 1
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+    finally:
+        conn.close()
 
     try:
         profs = load_profiles()
@@ -529,11 +580,13 @@ def export_profile_cookies(profile_id):
         return []
     try:
         import sqlite3
-        conn = sqlite3.connect(db_path)
-        cur = conn.cursor()
-        cur.execute("SELECT host_key, name, value, path, expires_utc, is_secure, is_httponly FROM cookies")
-        rows = cur.fetchall()
-        conn.close()
+        conn = sqlite3.connect(db_path, timeout=5.0)
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT host_key, name, value, path, expires_utc, is_secure, is_httponly FROM cookies")
+            rows = cur.fetchall()
+        finally:
+            conn.close()
         out = []
         for r in rows:
             exp_unix = int((r[4] / 1000000) - 11644473600) if r[4] > 0 else 0
@@ -547,7 +600,8 @@ def export_profile_cookies(profile_id):
                 "httpOnly": bool(r[6])
             })
         return out
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[Cookie Export] Error reading cookies: {e}")
         return []
 
 def clear_profile_cookies(profile_id):
@@ -555,13 +609,17 @@ def clear_profile_cookies(profile_id):
     if db_path and os.path.exists(db_path):
         try:
             import sqlite3
-            conn = sqlite3.connect(db_path)
-            cur = conn.cursor()
-            cur.execute("DELETE FROM cookies")
-            conn.commit()
-            conn.close()
-        except Exception:
-            pass
+            conn = sqlite3.connect(db_path, timeout=5.0)
+            try:
+                cur = conn.cursor()
+                cur.execute("DELETE FROM cookies")
+                conn.commit()
+            finally:
+                conn.close()
+        except sqlite3.OperationalError:
+            return False, "Profile is currently running and locking the database. Please close the profile before clearing cookies."
+        except Exception as e:
+            return False, str(e)
     try:
         profs = load_profiles()
         for p in profs:
@@ -571,7 +629,7 @@ def clear_profile_cookies(profile_id):
         save_profiles(profs)
     except Exception:
         pass
-    return True
+    return True, None
 
 def test_single_proxy(px):
     ip = px.get('ip', '').strip()
@@ -662,9 +720,9 @@ def test_single_proxy(px):
         "latency": lat or 45,
         "location": loc_display,
         "country": country,
-        "countryCode": geo.get('countryCode', 'IN'),
+        "countryCode": geo.get('countryCode', 'US'),
         "city": city,
-        "timezone": geo.get('timezone', 'Asia/Kolkata')
+        "timezone": geo.get('timezone', 'UTC')
     }
 
 def test_all_proxies_concurrent(proxies_list):
@@ -793,6 +851,12 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 user_data_dir = os.path.join(PROFILES_BASE_DIR, f"{prof_id}_{safe_name}")
                 os.makedirs(user_data_dir, exist_ok=True)
                 
+                px_cfg = prof.get('proxy', {})
+                px_locale = px_cfg.get('locale') or prof.get('locale', '')
+                px_accept_lang = px_cfg.get('acceptLanguage') or prof.get('acceptLanguage', '')
+                px_webrtc = px_cfg.get('webrtc', 'Proxy IP')
+                px_tz = px_cfg.get('timezone', '')
+
                 from stealth_engine import prepare_profile_extension
                 ext_dir = prepare_profile_extension(
                     profile_id=prof_id,
@@ -801,26 +865,38 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                     webgl_renderer=prof.get('hardware', {}).get('webGlRenderer', 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)'),
                     cpu_cores=prof.get('hardware', {}).get('cpuCores', 8),
                     memory_gb=prof.get('hardware', {}).get('memoryGb', 16),
-                    timezone_id=prof.get('proxy', {}).get('timezone', ''),
+                    timezone_id=px_tz,
                     width=prof.get('resolution', {}).get('width', 1920),
                     height=prof.get('resolution', {}).get('height', 1080),
                     useragent=prof.get('useragent', ''),
-                    fingerprint_seed=prof.get('fingerprintSeed') or prof.get('canvasSeed') or prof_id
+                    fingerprint_seed=prof.get('fingerprintSeed') or prof.get('canvasSeed') or prof_id,
+                    locale=px_locale,
+                    accept_language=px_accept_lang,
+                    webrtc=px_webrtc
                 )
 
-                has_proxy = prof.get('proxy', {}).get('enabled') and prof.get('proxy', {}).get('ip')
+                has_proxy = px_cfg.get('enabled') and px_cfg.get('ip')
                 px_flag = '--no-proxy-server'
                 if has_proxy:
-                    ptype = (prof.get('proxy', {}).get('type') or 'http').lower()
-                    px_ip = prof.get('proxy', {}).get('ip')
-                    px_port = prof.get('proxy', {}).get('port')
+                    ptype = (px_cfg.get('type') or 'http').lower()
+                    px_ip = px_cfg.get('ip')
+                    px_port = px_cfg.get('port')
                     px_flag = f'--proxy-server="{ptype}://{px_ip}:{px_port}" --force-webrtc-ip-handling-policy=disable_non_proxied_udp'
 
                 bat_path = os.path.join(user_data_dir, "launch.bat")
                 w_val = prof.get("resolution", {}).get("width", 1920)
                 h_val = prof.get("resolution", {}).get("height", 1080)
                 ua_val = prof.get("useragent", "")
-                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\nstart "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --load-extension="{ext_dir}" --disable-extensions-except="{ext_dir}" --window-size={w_val},{h_val} --user-agent="{ua_val}" {px_flag} --disable-blink-features=AutomationControlled --test-type --disable-infobars --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
+
+                custom_exts = prof.get("customExtensions") or []
+                valid_custom_exts = [e.strip() for e in custom_exts if isinstance(e, str) and e.strip() and os.path.exists(e.strip())]
+                all_exts = [ext_dir] + valid_custom_exts
+                ext_list_str = ','.join(all_exts)
+
+                tz_env_line = f"set TZ={px_tz}\r\n" if px_tz else ""
+                lang_flag = f'--lang={px_locale} ' if px_locale else ""
+
+                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --disable-blink-features=AutomationControlled --test-type --disable-infobars --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
                 try:
                     with open(bat_path, 'w', encoding='utf-8') as bf:
                         bf.write(bat_content)
@@ -1070,9 +1146,9 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                     "typeChanged": res.get('typeChanged', False),
                     "location": res.get('location', 'Online'),
                     "country": res.get('country', ''),
-                    "countryCode": res.get('countryCode', 'IN'),
+                    "countryCode": res.get('countryCode', 'US'),
                     "city": res.get('city', ''),
-                    "timezone": res.get('timezone', 'Asia/Kolkata')
+                    "timezone": res.get('timezone', 'UTC')
                 }).encode('utf-8'))
                 return
             else:
@@ -1086,22 +1162,40 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 return
 
         elif parsed.path == '/api/profiles/cookies/import':
+            import sqlite3
             profile_id = payload.get('id')
             raw_cookies = payload.get('cookies')
-            imported_count = import_profile_cookies(profile_id, raw_cookies)
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"success": True, "count": imported_count}).encode('utf-8'))
+            try:
+                imported_count = import_profile_cookies(profile_id, raw_cookies)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "count": imported_count}).encode('utf-8'))
+            except sqlite3.OperationalError:
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": False,
+                    "error": "Profile is currently running and locking the database. Please close the profile before importing cookies."
+                }).encode('utf-8'))
+            except Exception as e:
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode('utf-8'))
             return
 
         elif parsed.path == '/api/profiles/cookies/clear':
             profile_id = payload.get('id')
-            clear_profile_cookies(profile_id)
+            success, err = clear_profile_cookies(profile_id)
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
+            if success:
+                self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
+            else:
+                self.wfile.write(json.dumps({"success": False, "error": err}).encode('utf-8'))
             return
 
         elif parsed.path == '/api/proxies/test-all':
@@ -1151,12 +1245,13 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
             user_data_dir = os.path.join(PROFILES_BASE_DIR, f"{profile_id}_{safe_name}")
             os.makedirs(user_data_dir, exist_ok=True)
 
-            lockfile = os.path.join(user_data_dir, 'SingletonLock')
-            if os.path.exists(lockfile) or os.path.islink(lockfile):
-                try:
-                    os.remove(lockfile)
-                except Exception:
-                    pass
+            for s_file in ['SingletonLock', 'SingletonCookie', 'SingletonSocket']:
+                s_path = os.path.join(user_data_dir, s_file)
+                if os.path.exists(s_path) or os.path.islink(s_path):
+                    try:
+                        os.remove(s_path)
+                    except Exception:
+                        pass
 
             cdp_port = get_free_cdp_port()
 
@@ -1176,6 +1271,9 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
             proxy_user = proxy.get('username', '')
             proxy_pass = proxy.get('password', '')
             proxy_tz = ""
+            proxy_locale = proxy.get('locale', '') or profile.get('locale', '')
+            proxy_accept_lang = proxy.get('acceptLanguage', '') or profile.get('acceptLanguage', '')
+            webrtc_mode = proxy.get('webrtc', 'Proxy IP')
 
             if proxy.get('enabled') and proxy.get('ip') and proxy.get('port'):
                 ip = proxy.get('ip', '').strip()
@@ -1188,6 +1286,11 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                     proxy_tz = geo['timezone']
                 else:
                     proxy_tz = proxy.get('timezone', 'America/New_York')
+
+                if not proxy_locale and geo and geo.get('locale'):
+                    proxy_locale = geo['locale']
+                if not proxy_accept_lang and geo and geo.get('acceptLanguage'):
+                    proxy_accept_lang = geo['acceptLanguage']
             else:
                 # Direct network: do NOT override timezone — preserve native system timezone
                 proxy_tz = ""
@@ -1202,7 +1305,10 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                         webgl_vendor, webgl_renderer, cpu_cores, memory_gb,
                         proxy_user, proxy_pass, proxy_tz,
                         custom_extensions=profile.get('customExtensions') or [],
-                        fingerprint_seed=profile.get('fingerprintSeed') or profile.get('canvasSeed') or profile_id
+                        fingerprint_seed=profile.get('fingerprintSeed') or profile.get('canvasSeed') or profile_id,
+                        locale=proxy_locale,
+                        accept_language=proxy_accept_lang,
+                        webrtc=webrtc_mode
                     )
                     running_processes[profile_id] = {
                         "pid": real_pid,
@@ -1233,8 +1339,11 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
 
         elif parsed.path == '/api/profiles/stop':
             profile_id = payload.get('id')
+            user_data_dir = None
+
             if profile_id in running_processes:
                 info = running_processes[profile_id]
+                user_data_dir = info.get('user_data_dir')
                 bridge = info.get('bridge')
                 if bridge:
                     try:
@@ -1258,19 +1367,47 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 if cdp_port:
                     try:
                         result = subprocess.run(
-                            f'netstat -ano | findstr "LISTENING" | findstr ":{cdp_port} "',
+                            'netstat -ano',
                             shell=True, capture_output=True, text=True, timeout=3
                         )
-                        for line in result.stdout.strip().split('\n'):
+                        my_pid = os.getpid()
+                        for line in result.stdout.strip().splitlines():
                             parts = line.strip().split()
-                            if parts:
-                                pid_str = parts[-1]
-                                if pid_str.isdigit() and int(pid_str) > 0:
-                                    subprocess.run(f'taskkill /F /PID {pid_str} /T', shell=True, capture_output=True)
-                    except Exception:
-                        pass
+                            if len(parts) >= 5 and 'LISTENING' in parts:
+                                local_addr = parts[1]
+                                port_part = local_addr.rsplit(':', 1)[-1]
+                                if port_part == str(cdp_port):
+                                    pid_str = parts[-1]
+                                    if pid_str.isdigit() and int(pid_str) > 0 and int(pid_str) != my_pid:
+                                        subprocess.run(f'taskkill /F /PID {pid_str} /T', shell=True, capture_output=True)
+                    except Exception as net_err:
+                        logger.warning(f"[Stop] Error freeing CDP port {cdp_port}: {net_err}")
 
                 del running_processes[profile_id]
+
+            # Resolve user_data_dir if not found in running_processes (e.g. server restart)
+            if not user_data_dir:
+                try:
+                    for p in load_profiles():
+                        if p.get('id') == profile_id:
+                            safe_name = "".join(c if c.isalnum() else "_" for c in p['name']).lower()
+                            candidate_dir = os.path.join(PROFILES_BASE_DIR, f"{profile_id}_{safe_name}")
+                            if os.path.exists(candidate_dir):
+                                user_data_dir = candidate_dir
+                            break
+                except Exception:
+                    pass
+
+            # Clean up Chromium Singleton lockfiles so profile can relaunch cleanly without crash alerts
+            if user_data_dir and os.path.exists(user_data_dir):
+                time.sleep(0.3)
+                for lockfile in ['SingletonLock', 'SingletonCookie', 'SingletonSocket']:
+                    lf_path = os.path.join(user_data_dir, lockfile)
+                    try:
+                        if os.path.exists(lf_path) or os.path.islink(lf_path):
+                            os.remove(lf_path)
+                    except Exception:
+                        pass
 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -1294,6 +1431,7 @@ def reconcile_running_processes():
     """Scans active CDP ports and SingletonLock files on server startup to rebuild running_processes."""
     try:
         profiles = load_profiles()
+        reconciled_ports = set()
         for p in profiles:
             prof_id = p.get('id')
             safe_name = "".join(c if c.isalnum() else "_" for c in p['name']).lower()
@@ -1301,7 +1439,8 @@ def reconcile_running_processes():
             lockfile = os.path.join(user_data_dir, 'SingletonLock')
             if os.path.exists(user_data_dir) and (os.path.exists(lockfile) or os.path.islink(lockfile)):
                 for cdp_p in range(9200, 9500):
-                    if is_port_open(cdp_p):
+                    if cdp_p not in reconciled_ports and is_port_open(cdp_p):
+                        reconciled_ports.add(cdp_p)
                         running_processes[prof_id] = {
                             "pid": "Reconciled",
                             "port": cdp_p,
@@ -1327,15 +1466,19 @@ def clear_port_3000_conflicts():
                 line = line.strip()
                 if 'LISTENING' in line:
                     parts = line.split()
-                    if parts:
-                        pid_str = parts[-1]
-                        if pid_str.isdigit():
-                            p_int = int(pid_str)
-                            if p_int > 0 and p_int != my_pid:
-                                subprocess.run(f'taskkill /F /PID {p_int} /T', shell=True, capture_output=True)
-                                time.sleep(0.5)
-    except Exception:
-        pass
+                    if len(parts) >= 5:
+                        local_addr = parts[1]
+                        # Ensure it specifically binds to port 3000 (not 30000, 13000, etc.)
+                        if local_addr.rsplit(':', 1)[-1] == '3000':
+                            pid_str = parts[-1]
+                            if pid_str.isdigit():
+                                p_int = int(pid_str)
+                                if p_int > 0 and p_int != my_pid:
+                                    logger.info(f"[Conflict] Terminating conflicting process PID {p_int} on port 3000...")
+                                    subprocess.run(f'taskkill /F /PID {p_int} /T', shell=True, capture_output=True)
+                                    time.sleep(0.5)
+    except Exception as e:
+        logger.warning(f"[Conflict Warning] Could not clear port 3000 conflicts: {e}")
 
 if __name__ == '__main__':
     clear_port_3000_conflicts()

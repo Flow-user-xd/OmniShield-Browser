@@ -53,7 +53,9 @@ const headerRules = [
         { header: 'Sec-CH-UA-Model', operation: 'set', value: `"${targetModel}"` },
         { header: 'Sec-CH-UA-Architecture', operation: 'set', value: `"${targetArch}"` },
         { header: 'Sec-CH-UA', operation: 'set', value: `"Chromium";v="${chromeMajor}", "Google Chrome";v="${chromeMajor}", "Not_A Brand";v="24"` },
-        { header: 'Sec-CH-UA-Full-Version-List', operation: 'set', value: `"Chromium";v="${chromeFull}", "Google Chrome";v="${chromeFull}", "Not_A Brand";v="24.0.0.0"` }
+        { header: 'Sec-CH-UA-Full-Version', operation: 'set', value: `"${chromeFull}"` },
+        { header: 'Sec-CH-UA-Full-Version-List', operation: 'set', value: `"Chromium";v="${chromeFull}", "Google Chrome";v="${chromeFull}", "Not_A Brand";v="24.0.0.0"` },
+        { header: 'Sec-CH-UA-Bitness', operation: 'set', value: '"64"' }
       ]
     },
     condition: {
@@ -71,14 +73,36 @@ if (ua) {
   });
 }
 
-function updateRules() {
-  chrome.declarativeNetRequest.getDynamicRules(oldRules => {
-    const oldIds = oldRules.map(r => r.id);
-    chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: oldIds.length > 0 ? oldIds : [1],
-      addRules: headerRules
-    });
+const acceptLang = cfg.acceptLanguage || (cfg.locale ? `${cfg.locale},en;q=0.9` : '');
+if (acceptLang) {
+  headerRules[0].action.requestHeaders.push({
+    header: 'Accept-Language',
+    operation: 'set',
+    value: acceptLang
   });
+}
+
+function updateRules() {
+  if (!chrome.declarativeNetRequest || !chrome.declarativeNetRequest.getDynamicRules) return;
+  try {
+    chrome.declarativeNetRequest.getDynamicRules(oldRules => {
+      if (chrome.runtime.lastError) {
+        console.warn('[OmniShield SW] getDynamicRules:', chrome.runtime.lastError.message);
+        return;
+      }
+      const oldIds = (oldRules || []).map(r => r.id);
+      chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: oldIds.length > 0 ? oldIds : [1],
+        addRules: headerRules
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.warn('[OmniShield SW] updateDynamicRules:', chrome.runtime.lastError.message);
+        }
+      });
+    });
+  } catch (err) {
+    console.warn('[OmniShield SW] Failed to update dynamic rules:', err);
+  }
 }
 
 chrome.runtime.onInstalled.addListener(updateRules);
@@ -188,7 +212,7 @@ if (chrome.webNavigation && chrome.webNavigation.onBeforeNavigate) {
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 2. Natural Omnibox Search Queries:

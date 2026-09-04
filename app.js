@@ -766,8 +766,13 @@
       useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36',
       resolution: { width: 1920, height: 1080, dpr: 1 },
       hardware: { cpuCores: 8, memoryGb: 16, webGlVendor: 'Google Inc. (NVIDIA)', webGlRenderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)', canvasNoise: 'Noise' },
-      proxy: { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' }
+      proxy: { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' },
+      customExtensions: []
     };
+    if (!p.resolution) p.resolution = { width: 1920, height: 1080, dpr: 1 };
+    if (!p.hardware) p.hardware = { cpuCores: 8, memoryGb: 16, webGlVendor: 'Google Inc. (NVIDIA)', webGlRenderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)', canvasNoise: 'Noise' };
+    if (!p.proxy) p.proxy = { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' };
+    if (!p.customExtensions) p.customExtensions = [];
 
     const presetsHtml = window.DEVICE_PRESETS ? window.DEVICE_PRESETS.map(preset => `<option value="${preset.id}">${preset.name}</option>`).join('') : '';
 
@@ -1015,7 +1020,13 @@
 
             <!-- Custom Extensions Loader (Feature 4) -->
             <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; display: flex; flex-direction: column; gap: 12px;">
-              <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--primary); margin: 0;">🧩 Custom Chrome Extensions (Unpacked)</h4>
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--primary); margin: 0;">🧩 External & Custom Extensions (Unpacked)</h4>
+                <span style="font-size: 0.72rem; color: #00e676; background: rgba(0,230,118,0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0,230,118,0.3); font-weight: 600;">⚡ Unlocked & Developer Mode Active</span>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+                Attach external extension folders here to automatically boot on profile start, or navigate to <code>chrome://extensions</code> inside your running browser profile to dynamically <strong>"Load unpacked"</strong> any extension at runtime!
+              </p>
               <div style="display: flex; gap: 8px;">
                 <input type="text" id="modal-new-ext-path" class="input-field" placeholder="Folder path, e.g. C:\Users\Username\Downloads\MyExtension" style="flex: 1;">
                 <button type="button" id="btn-add-custom-ext" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem; background: rgba(0,242,254,0.1); border-color: var(--primary); color: var(--primary); white-space: nowrap;">➕ Add Extension</button>
@@ -1109,7 +1120,7 @@
     const h = prof.resolution?.height || 1080;
     const ua = prof.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36';
 
-    const commonFlags = `--user-data-dir="${userDataDir}" --load-extension="${extDir}" --disable-extensions-except="${extDir}" --window-size=${w},${h} --user-agent="${ua}" ${proxyFlag} --disable-blink-features=AutomationControlled --test-type --disable-infobars --no-first-run --no-default-browser-check https://browserleaks.com/canvas`;
+    const commonFlags = `--user-data-dir="${userDataDir}" --load-extension="${extDir}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --window-size=${w},${h} --user-agent="${ua}" ${proxyFlag} --disable-blink-features=AutomationControlled --test-type --disable-infobars --no-first-run --no-default-browser-check https://browserleaks.com/canvas`;
 
     const cmd = `"${chromePath}" ${commonFlags}`;
     const ps = `& "${chromePath}" ${commonFlags}`;
@@ -2258,7 +2269,20 @@
     const btnCreateModal = document.getElementById('btn-create-modal');
     if (btnCreateModal) {
       btnCreateModal.addEventListener('click', () => {
-        state.editingProfile = null;
+        state.editingProfile = {
+          id: `prof-${Date.now()}`,
+          name: 'New Custom Profile',
+          tags: ['Custom', 'Chrome'],
+          status: 'stopped',
+          os: 'Windows 11',
+          browser: 'Chrome 150',
+          useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36',
+          resolution: { width: 1920, height: 1080, dpr: 1 },
+          hardware: { cpuCores: 8, memoryGb: 16, webGlVendor: 'Google Inc. (NVIDIA)', webGlRenderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)', canvasNoise: 'Noise' },
+          proxy: { enabled: false, type: 'SOCKS5', ip: '', port: '', username: '', password: '', location: 'Direct Network', timezone: 'Asia/Kolkata' },
+          customExtensions: [],
+          isNew: true
+        };
         state.modalOpen = true;
         render();
       });
@@ -2803,7 +2827,7 @@
 
         const customExtensions = (state.editingProfile && state.editingProfile.customExtensions) ? state.editingProfile.customExtensions : [];
 
-        if (state.editingProfile) {
+        if (state.editingProfile && !state.editingProfile.isNew) {
           state.editingProfile.name = name;
           state.editingProfile.os = os;
           state.editingProfile.useragent = useragent;
@@ -2812,8 +2836,9 @@
           state.editingProfile.proxy = proxyObj;
           state.editingProfile.customExtensions = customExtensions;
         } else {
+          const newId = (state.editingProfile && state.editingProfile.id) ? state.editingProfile.id : `prof-${Date.now()}`;
           const newProf = {
-            id: `prof-${Date.now()}`,
+            id: newId,
             name,
             tags: ['Custom', 'Chrome'],
             status: 'stopped',
@@ -3047,6 +3072,13 @@
             }
             area.value = '';
             setTimeout(() => { render(); }, 1200);
+          } else {
+            if (msgBox) {
+              msgBox.style.display = 'block';
+              msgBox.style.background = 'rgba(239, 68, 68, 0.15)';
+              msgBox.style.color = '#ef4444';
+              msgBox.innerText = `⚠️ ${data.error || 'Failed to import cookies'}`;
+            }
           }
         } catch (e) {
           alert('Error importing cookies: ' + e.message);
@@ -3089,14 +3121,19 @@
       btnClearCookies.addEventListener('click', async () => {
         if (!confirm('Clear all stored cookies for this profile?')) return;
         try {
-          await fetch('/api/profiles/cookies/clear', {
+          const res = await fetch('/api/profiles/cookies/clear', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: state.cookieModalProfileId })
           });
-          const prof = state.profiles.find(p => p.id === state.cookieModalProfileId);
-          if (prof && prof.storage) prof.storage.cookiesCount = 0;
-          render();
+          const data = await res.json();
+          if (data.success) {
+            const prof = state.profiles.find(p => p.id === state.cookieModalProfileId);
+            if (prof && prof.storage) prof.storage.cookiesCount = 0;
+            render();
+          } else {
+            alert('Could not clear cookies: ' + (data.error || 'Unknown error'));
+          }
         } catch (e) {
           alert('Error clearing cookies: ' + e.message);
         }
@@ -3259,12 +3296,61 @@
     }
 
     // Custom Extension Loader in Profile Modal (Feature 4)
+    function syncModalInputs() {
+      if (!state.editingProfile) return;
+      const nameIn = document.getElementById('modal-name');
+      if (nameIn) state.editingProfile.name = nameIn.value;
+      const osIn = document.getElementById('modal-os');
+      if (osIn) state.editingProfile.os = osIn.value;
+      const resIn = document.getElementById('modal-res-preset');
+      if (resIn) {
+        const parts = resIn.value.split('x');
+        state.editingProfile.resolution = { width: parseInt(parts[0]) || 1920, height: parseInt(parts[1]) || 1080, dpr: 1 };
+      }
+      const cpuIn = document.getElementById('modal-cpu');
+      if (cpuIn) {
+        if (!state.editingProfile.hardware) state.editingProfile.hardware = {};
+        state.editingProfile.hardware.cpuCores = parseInt(cpuIn.value) || 8;
+      }
+      const ramIn = document.getElementById('modal-ram');
+      if (ramIn) {
+        if (!state.editingProfile.hardware) state.editingProfile.hardware = {};
+        state.editingProfile.hardware.memoryGb = parseInt(ramIn.value) || 16;
+      }
+      const vendorIn = document.getElementById('modal-webgl-vendor');
+      if (vendorIn) {
+        if (!state.editingProfile.hardware) state.editingProfile.hardware = {};
+        state.editingProfile.hardware.webGlVendor = vendorIn.value;
+      }
+      const rendIn = document.getElementById('modal-webgl-renderer');
+      if (rendIn) {
+        if (!state.editingProfile.hardware) state.editingProfile.hardware = {};
+        state.editingProfile.hardware.webGlRenderer = rendIn.value;
+      }
+      const uaIn = document.getElementById('modal-ua');
+      if (uaIn) state.editingProfile.useragent = uaIn.value;
+
+      const pxType = document.getElementById('modal-proxy-type');
+      const pxIp = document.getElementById('modal-proxy-ip');
+      const pxPort = document.getElementById('modal-proxy-port');
+      const pxUser = document.getElementById('modal-proxy-user');
+      const pxPass = document.getElementById('modal-proxy-pass');
+      if (state.editingProfile.proxy) {
+        if (pxType) state.editingProfile.proxy.type = pxType.value;
+        if (pxIp) state.editingProfile.proxy.ip = pxIp.value.trim();
+        if (pxPort) state.editingProfile.proxy.port = pxPort.value.trim();
+        if (pxUser) state.editingProfile.proxy.username = pxUser.value.trim();
+        if (pxPass) state.editingProfile.proxy.password = pxPass.value.trim();
+      }
+    }
+
     const btnAddExt = document.getElementById('btn-add-custom-ext');
     if (btnAddExt) {
       btnAddExt.addEventListener('click', () => {
         const extInput = document.getElementById('modal-new-ext-path');
         const path = extInput ? extInput.value.trim() : '';
         if (!path) return;
+        syncModalInputs();
         if (!state.editingProfile) state.editingProfile = {};
         if (!state.editingProfile.customExtensions) state.editingProfile.customExtensions = [];
         state.editingProfile.customExtensions.push(path);
@@ -3274,6 +3360,7 @@
     document.querySelectorAll('.btn-remove-ext').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = parseInt(e.currentTarget.dataset.idx);
+        syncModalInputs();
         if (state.editingProfile && state.editingProfile.customExtensions) {
           state.editingProfile.customExtensions.splice(idx, 1);
           render();
