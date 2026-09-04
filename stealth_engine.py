@@ -141,15 +141,32 @@ def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_ren
     Returns the path to the per-profile extension directory.
     """
     ext_dir = os.path.join(user_data_dir, 'omnishield_ext')
+    os.makedirs(ext_dir, exist_ok=True)
 
-    if os.path.exists(ext_dir):
+    # Copy all template files reliably, overwriting existing files
+    for item in os.listdir(EXTENSION_TEMPLATE_DIR):
+        src_item = os.path.join(EXTENSION_TEMPLATE_DIR, item)
+        dst_item = os.path.join(ext_dir, item)
+        if os.path.isdir(src_item):
+            shutil.copytree(src_item, dst_item, dirs_exist_ok=True)
+        else:
+            try:
+                shutil.copy2(src_item, dst_item)
+            except Exception:
+                pass
+
+    # Clean any stale legacy flags in existing user_data_dir/launch.bat
+    bat_path = os.path.join(user_data_dir, 'launch.bat')
+    if os.path.exists(bat_path):
         try:
-            shutil.rmtree(ext_dir)
+            with open(bat_path, 'r', encoding='utf-8') as bf:
+                bat_txt = bf.read()
+            if '--extensions-on-chrome-urls' in bat_txt or '--disable-popup-blocking' in bat_txt:
+                bat_txt = bat_txt.replace('--extensions-on-chrome-urls', '').replace('--disable-popup-blocking', '')
+                with open(bat_path, 'w', encoding='utf-8') as bf:
+                    bf.write(bat_txt)
         except Exception:
             pass
-
-    # Copy the base extension template
-    shutil.copytree(EXTENSION_TEMPLATE_DIR, ext_dir)
 
     # Clear temporary browser cache only (never wipe user extensions or their Service Worker storage)
     default_dir = os.path.join(user_data_dir, 'Default')
@@ -180,7 +197,7 @@ def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_ren
     webglVendor: {json.dumps(webgl_vendor)},
     webglRenderer: {json.dumps(webgl_renderer)},
     cpuCores: {int(cpu_cores)},
-    memoryGb: {int(memory_gb)},
+    memoryGb: {8 if int(memory_gb) >= 8 else (4 if int(memory_gb) >= 4 else (2 if int(memory_gb) >= 2 else 1))},
     audioNoise: {seeds['audioNoise']:.13f},
     timezone: {json.dumps(timezone_id)},
     locale: {json.dumps(locale)},
@@ -550,22 +567,18 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           // Native userAgentData
           if (typeof NavigatorUAData !== 'undefined') {{
             const brands = Object.freeze([
+              Object.freeze({{ brand: 'Not/A)Brand', version: '8' }}),
               Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_major)} }}),
-              Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_major)} }}),
-              Object.freeze({{ brand: 'Not_A Brand', version: '24' }})
+              Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_major)} }})
             ]);
             const highEntropy = {{
               architecture: archStr,
               bitness: '64',
-              brands: Object.freeze([
-                Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_full)} }}),
-                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
-                Object.freeze({{ brand: 'Not_A Brand', version: '24.0.0.0' }})
-              ]),
+              brands: brands,
               fullVersionList: Object.freeze([
+                Object.freeze({{ brand: 'Not/A)Brand', version: '8.0.0.0' }}),
                 Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_full)} }}),
-                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
-                Object.freeze({{ brand: 'Not_A Brand', version: '24.0.0.0' }})
+                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }})
               ]),
               mobile: isMobile,
               model: modelStr,
@@ -1362,14 +1375,14 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 "platform": cdp_platform,
                 "userAgentMetadata": {
                     "brands": [
+                        {"brand": "Not/A)Brand", "version": "8"},
                         {"brand": "Chromium", "version": chrome_major},
-                        {"brand": "Google Chrome", "version": chrome_major},
-                        {"brand": "Not_A Brand", "version": "24"}
+                        {"brand": "Google Chrome", "version": chrome_major}
                     ],
                     "fullVersionList": [
+                        {"brand": "Not/A)Brand", "version": "8.0.0.0"},
                         {"brand": "Chromium", "version": chrome_full},
-                        {"brand": "Google Chrome", "version": chrome_full},
-                        {"brand": "Not_A Brand", "version": "24.0.0.0"}
+                        {"brand": "Google Chrome", "version": chrome_full}
                     ],
                     "fullVersion": chrome_full,
                     "platform": os_platform,

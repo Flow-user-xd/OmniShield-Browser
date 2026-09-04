@@ -36,49 +36,39 @@ if (ua.includes('iPhone') || ua.includes('iPad') || ua.includes('OS 17') || ua.i
   isMobile = ua.includes('Mobile');
 }
 
-const chromeM = ua.match(/(?:Chrome|CriOS)\/(\d+)\.([\d.]+)/);
-const chromeMajor = chromeM ? chromeM[1] : '150';
-const chromeFull = chromeM ? `${chromeMajor}.${chromeM[2]}` : '150.0.0.0';
+const chromeM = ua ? ua.match(/(?:Chrome|CriOS)\/(\d+)\.([\d.]+)/) : null;
+const chromeMajor = chromeM ? chromeM[1] : '';
 
-const headerRules = [
-  {
+const headerRules = [];
+
+if (ua && chromeMajor) {
+  const reqHeaders = [
+    { header: 'User-Agent', operation: 'set', value: ua },
+    { header: 'Sec-CH-UA', operation: 'set', value: `"Not/A)Brand";v="8", "Chromium";v="${chromeMajor}", "Google Chrome";v="${chromeMajor}"` },
+    { header: 'Sec-CH-UA-Mobile', operation: 'set', value: isMobile ? '?1' : '?0' },
+    { header: 'Sec-CH-UA-Platform', operation: 'set', value: `"${targetOSName}"` }
+  ];
+
+  const acceptLang = cfg.acceptLanguage || (cfg.locale ? `${cfg.locale},en;q=0.9` : '');
+  if (acceptLang) {
+    reqHeaders.push({
+      header: 'Accept-Language',
+      operation: 'set',
+      value: acceptLang
+    });
+  }
+
+  headerRules.push({
     id: 1,
     priority: 1,
     action: {
       type: 'modifyHeaders',
-      requestHeaders: [
-        { header: 'Sec-CH-UA-Platform', operation: 'set', value: `"${targetOSName}"` },
-        { header: 'Sec-CH-UA-Mobile', operation: 'set', value: isMobile ? '?1' : '?0' },
-        { header: 'Sec-CH-UA-Platform-Version', operation: 'set', value: `"${targetPlatformVersion}"` },
-        { header: 'Sec-CH-UA-Model', operation: 'set', value: `"${targetModel}"` },
-        { header: 'Sec-CH-UA-Architecture', operation: 'set', value: `"${targetArch}"` },
-        { header: 'Sec-CH-UA', operation: 'set', value: `"Chromium";v="${chromeMajor}", "Google Chrome";v="${chromeMajor}", "Not_A Brand";v="24"` },
-        { header: 'Sec-CH-UA-Full-Version', operation: 'set', value: `"${chromeFull}"` },
-        { header: 'Sec-CH-UA-Full-Version-List', operation: 'set', value: `"Chromium";v="${chromeFull}", "Google Chrome";v="${chromeFull}", "Not_A Brand";v="24.0.0.0"` },
-        { header: 'Sec-CH-UA-Bitness', operation: 'set', value: '"64"' }
-      ]
+      requestHeaders: reqHeaders
     },
     condition: {
       urlFilter: '*',
       resourceTypes: ['main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object', 'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket', 'other']
     }
-  }
-];
-
-if (ua) {
-  headerRules[0].action.requestHeaders.push({
-    header: 'User-Agent',
-    operation: 'set',
-    value: ua
-  });
-}
-
-const acceptLang = cfg.acceptLanguage || (cfg.locale ? `${cfg.locale},en;q=0.9` : '');
-if (acceptLang) {
-  headerRules[0].action.requestHeaders.push({
-    header: 'Accept-Language',
-    operation: 'set',
-    value: acceptLang
   });
 }
 

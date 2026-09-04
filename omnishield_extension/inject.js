@@ -269,22 +269,18 @@
       const chromeFull = chromeM ? `${chromeMajor}.${chromeM[2]}` : '150.0.0.0';
 
       const brands = Object.freeze([
+        Object.freeze({ brand: 'Not/A)Brand', version: '8' }),
         Object.freeze({ brand: 'Chromium', version: chromeMajor }),
-        Object.freeze({ brand: 'Google Chrome', version: chromeMajor }),
-        Object.freeze({ brand: 'Not_A Brand', version: '24' })
+        Object.freeze({ brand: 'Google Chrome', version: chromeMajor })
       ]);
       const highEntropy = {
         architecture: targetArch,
         bitness: '64',
-        brands: Object.freeze([
-          Object.freeze({ brand: 'Chromium', version: chromeFull }),
-          Object.freeze({ brand: 'Google Chrome', version: chromeFull }),
-          Object.freeze({ brand: 'Not_A Brand', version: '24.0.0.0' })
-        ]),
+        brands: brands,
         fullVersionList: Object.freeze([
+          Object.freeze({ brand: 'Not/A)Brand', version: '8.0.0.0' }),
           Object.freeze({ brand: 'Chromium', version: chromeFull }),
-          Object.freeze({ brand: 'Google Chrome', version: chromeFull }),
-          Object.freeze({ brand: 'Not_A Brand', version: '24.0.0.0' })
+          Object.freeze({ brand: 'Google Chrome', version: chromeFull })
         ]),
         mobile: isMobile,
         model: targetModel,

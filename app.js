@@ -1106,7 +1106,7 @@
     const baseDir = state.profilesDir || 'C:\\Users\\MASTER\\OmniShieldProfiles';
     const userDataDir = `${baseDir}\\${prof.id}_${safeName}`;
     const extDir = `${userDataDir}\\omnishield_ext`;
-    const chromePath = state.chromePath || 'c:\\Users\\MASTER\\Downloads\\VIRTUAL BROWSER\\OmniShield\\browser_core\\chrome.exe';
+    const chromePath = state.chromePath || 'c:\\Users\\MASTER\\Downloads\\OmniShield\\browser_core\\chrome.exe';
 
     const hasProxy = prof.proxy && prof.proxy.enabled && prof.proxy.ip;
     let proxyFlag = '--no-proxy-server';

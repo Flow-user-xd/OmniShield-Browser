@@ -939,6 +939,13 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 if os.path.exists(bat_path):
                     with open(bat_path, 'r', encoding='utf-8') as bf:
                         bat_content = bf.read()
+                    if '--extensions-on-chrome-urls' in bat_content or '--disable-popup-blocking' in bat_content:
+                        bat_content = bat_content.replace('--extensions-on-chrome-urls', '').replace('--disable-popup-blocking', '')
+                        try:
+                            with open(bat_path, 'w', encoding='utf-8') as bf:
+                                bf.write(bat_content)
+                        except Exception:
+                            pass
                 else:
                     target_start_url = prof.get("startUrl") or "about:blank"
                     bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile...\r\nstart "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --no-first-run {target_start_url}\r\n'
