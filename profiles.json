@@ -1,7 +1,7 @@
 [
   {
-    "id": "prof-1788526594123",
-    "name": "Lenovo ThinkStation P8 #601",
+    "id": "prof-1788541418462",
+    "name": "Lenovo ThinkPad X1 Carbon Gen 12 #894",
     "tags": [
       "Randomized",
       "Chrome"
@@ -11,49 +11,12 @@
     "browser": "Chrome 150",
     "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
     "resolution": {
-      "width": 3840,
-      "height": 2160,
+      "width": 1920,
+      "height": 1200,
       "dpr": 1
     },
     "hardware": {
-      "cpuCores": 14,
-      "memoryGb": 64,
-      "webGlVendor": "Google Inc. (NVIDIA)",
-      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)",
-      "canvasNoise": "Noise"
-    },
-    "proxy": {
-      "enabled": false,
-      "type": "SOCKS5",
-      "ip": "",
-      "port": "",
-      "username": "",
-      "password": "",
-      "location": "Direct Network",
-      "timezone": "Asia/Kolkata"
-    },
-    "storage": {
-      "cookiesCount": 0
-    }
-  },
-  {
-    "id": "prof-1788526222577",
-    "name": "Microsoft Surface Pro 10 #819",
-    "tags": [
-      "Randomized",
-      "Chrome"
-    ],
-    "status": "stopped",
-    "os": "Windows 11",
-    "browser": "Chrome 150",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.95 Safari/537.36",
-    "resolution": {
-      "width": 2880,
-      "height": 1920,
-      "dpr": 1
-    },
-    "hardware": {
-      "cpuCores": 14,
+      "cpuCores": 16,
       "memoryGb": 32,
       "webGlVendor": "Google Inc. (Intel)",
       "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
@@ -74,26 +37,26 @@
     }
   },
   {
-    "id": "prof-1788525144538",
-    "name": "Dell OptiPlex 7020 Corporate PC #561",
+    "id": "prof-1788541415119",
+    "name": "MacBook Air 15\" (M3) #368",
     "tags": [
       "Randomized",
       "Chrome"
     ],
     "status": "stopped",
-    "os": "Windows 10",
+    "os": "macOS Sonoma",
     "browser": "Chrome 150",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.115 Safari/537.36",
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
     "resolution": {
       "width": 1920,
       "height": 1080,
-      "dpr": 1
+      "dpr": 2
     },
     "hardware": {
       "cpuCores": 16,
-      "memoryGb": 32,
-      "webGlVendor": "Google Inc. (Intel)",
-      "webGlRenderer": "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)",
+      "memoryGb": 16,
+      "webGlVendor": "Apple Inc.",
+      "webGlRenderer": "Apple M2 Pro",
       "canvasNoise": "Noise"
     },
     "proxy": {
@@ -111,26 +74,26 @@
     }
   },
   {
-    "id": "prof-1788523281171",
-    "name": "Razer Blade 14 Compact #553",
+    "id": "prof-1788541406494",
+    "name": "MacBook Pro 16\" (M3 Max) #478",
     "tags": [
       "Randomized",
       "Chrome"
     ],
     "status": "stopped",
-    "os": "Windows 11",
+    "os": "macOS Sonoma",
     "browser": "Chrome 150",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.95 Safari/537.36",
     "resolution": {
       "width": 2560,
-      "height": 1600,
-      "dpr": 1
+      "height": 1440,
+      "dpr": 2
     },
     "hardware": {
-      "cpuCores": 12,
-      "memoryGb": 32,
-      "webGlVendor": "Google Inc. (NVIDIA)",
-      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)",
+      "cpuCores": 16,
+      "memoryGb": 64,
+      "webGlVendor": "Apple Inc.",
+      "webGlRenderer": "Apple M2 Pro",
       "canvasNoise": "Noise"
     },
     "proxy": {
@@ -148,8 +111,8 @@
     }
   },
   {
-    "id": "prof-1788504538785",
-    "name": "ASUS ROG Strix SCAR 18 #892",
+    "id": "prof-1788541156615",
+    "name": "Puget Systems Peak Workstation #261",
     "tags": [
       "Randomized",
       "Chrome"
@@ -157,17 +120,17 @@
     "status": "stopped",
     "os": "Windows 11",
     "browser": "Chrome 150",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.95 Safari/537.36",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.115 Safari/537.36",
     "resolution": {
-      "width": 2560,
-      "height": 1600,
+      "width": 3840,
+      "height": 2160,
       "dpr": 1
     },
     "hardware": {
-      "cpuCores": 14,
+      "cpuCores": 24,
       "memoryGb": 64,
       "webGlVendor": "Google Inc. (NVIDIA)",
-      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 SUPER Direct3D11 vs_5_0 ps_5_0)",
       "canvasNoise": "Noise"
     },
     "proxy": {
@@ -178,7 +141,7 @@
       "username": "",
       "password": "",
       "location": "Direct Network",
-      "timezone": "UTC"
+      "timezone": "Asia/Kolkata"
     },
     "storage": {
       "cookiesCount": 0
