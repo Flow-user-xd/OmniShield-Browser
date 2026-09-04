@@ -903,7 +903,7 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 lang_flag = f'--lang={px_locale} ' if px_locale else ""
                 target_start_url = prof.get("startUrl") or "about:blank"
 
-                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --disable-blink-features=AutomationControlled --silent-debugger-extension-api --extensions-on-chrome-urls --disable-popup-blocking --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --no-first-run --no-default-browser-check {target_start_url}\r\n'
+                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --disable-blink-features=AutomationControlled --silent-debugger-extension-api --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --no-first-run --no-default-browser-check {target_start_url}\r\n'
                 try:
                     with open(bat_path, 'w', encoding='utf-8') as bf:
                         bf.write(bat_content)

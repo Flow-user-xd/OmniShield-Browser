@@ -506,22 +506,6 @@
     }
   } catch(e) {}
 
-  // Event isTrusted & Synthetic Event Disguise (Akamai Heuristic Defense)
-  try {
-    if (typeof EventTarget !== 'undefined' && EventTarget.prototype.dispatchEvent) {
-      const origDispatch = EventTarget.prototype.dispatchEvent;
-      let patchedDispatch = function(event) {
-        if (event && !event.isTrusted) {
-          try {
-            Object.defineProperty(event, 'isTrusted', { value: true, configurable: true });
-          } catch(e) {}
-        }
-        return origDispatch.apply(this, arguments);
-      };
-      patchedDispatch = makeNative(patchedDispatch, 'dispatchEvent');
-      EventTarget.prototype.dispatchEvent = patchedDispatch;
-    }
-  } catch(e) {}
 
   // ==========================================
   // 5. WEBGL VENDOR, RENDERER & PARAMETERS
@@ -645,6 +629,8 @@
       origIsPointInPath = makeNative(origIsPointInPath, 'isPointInPath');
 
       const canvasContextMap = new WeakMap();
+      const drawnImageCanvases = new WeakSet();
+
       if (targetWin.HTMLCanvasElement.prototype.getContext) {
         const origGetCtx = targetWin.HTMLCanvasElement.prototype.getContext;
         let patchedGetCtx = function(type) {
@@ -656,6 +642,18 @@
         };
         patchedGetCtx = makeNative(patchedGetCtx, 'getContext');
         targetWin.HTMLCanvasElement.prototype.getContext = patchedGetCtx;
+      }
+
+      if (targetWin.CanvasRenderingContext2D.prototype.drawImage) {
+        const origDrawImage = targetWin.CanvasRenderingContext2D.prototype.drawImage;
+        let patchedDrawImage = function(...args) {
+          if (this && this.canvas) {
+            drawnImageCanvases.add(this.canvas);
+          }
+          return origDrawImage.apply(this, arguments);
+        };
+        patchedDrawImage = makeNative(patchedDrawImage, 'drawImage');
+        targetWin.CanvasRenderingContext2D.prototype.drawImage = patchedDrawImage;
       }
 
       const rDelta = (rShift >= -1 && rShift <= 1) ? rShift : ((rShift % 3) - 1);
@@ -677,6 +675,7 @@
       function isFingerprintCanvas(canvas, w, h) {
         if (isIntegrityCanvas(w, h)) return false;
         if (!canvas) return true;
+        if (drawnImageCanvases.has(canvas)) return false;
         try {
           const id = (canvas.id || '').toLowerCase();
           const cls = (canvas.className || '').toLowerCase();
@@ -1693,7 +1692,7 @@
   if (_wNav) {
     const _p = {
       hardwareConcurrency: ${cpuCores},
-      deviceMemory: ${memoryGb},
+      deviceMemory: ${(memoryGb >= 8) ? 8 : ((memoryGb >= 4) ? 4 : ((memoryGb >= 2) ? 2 : 1))},
       platform: ${JSON.stringify(targetPlatform)},
       userAgent: ${JSON.stringify(ua)},
       languages: Object.freeze(${JSON.stringify(userLangs)})

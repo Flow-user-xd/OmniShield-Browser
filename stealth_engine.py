@@ -758,6 +758,8 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             const origToBlob = targetWin.HTMLCanvasElement.prototype.toBlob;
 
             const canvasContextMap = new WeakMap();
+            const drawnImageCanvases = new WeakSet();
+
             if (targetWin.HTMLCanvasElement.prototype.getContext) {{
               const origGetCtx = targetWin.HTMLCanvasElement.prototype.getContext;
               let patchedGetCtx = function(type) {{
@@ -771,8 +773,21 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               targetWin.HTMLCanvasElement.prototype.getContext = patchedGetCtx;
             }}
 
+            if (targetWin.CanvasRenderingContext2D.prototype.drawImage) {{
+              const origDrawImage = targetWin.CanvasRenderingContext2D.prototype.drawImage;
+              let patchedDrawImage = function(...args) {{
+                if (this && this.canvas) {{
+                  drawnImageCanvases.add(this.canvas);
+                }}
+                return origDrawImage.apply(this, arguments);
+              }};
+              patchedDrawImage = makeNative(patchedDrawImage, 'drawImage');
+              targetWin.CanvasRenderingContext2D.prototype.drawImage = patchedDrawImage;
+            }}
+
             function isFingerprintCanvas(canvas, w, h) {{
               if (!canvas) return true;
+              if (drawnImageCanvases.has(canvas)) return false;
               try {{
                 const id = (canvas.id || '').toLowerCase();
                 const cls = (canvas.className || '').toLowerCase();
@@ -987,22 +1002,6 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           }}
         }} catch(e) {{}}
 
-        // Event isTrusted & Synthetic Event Disguise (Akamai Heuristic Defense)
-        try {{
-          if (typeof EventTarget !== 'undefined' && EventTarget.prototype.dispatchEvent) {{
-            const origDispatch = EventTarget.prototype.dispatchEvent;
-            let patchedDispatch = function(event) {{
-              if (event && !event.isTrusted) {{
-                try {{
-                  Object.defineProperty(event, 'isTrusted', {{ value: true, configurable: true }});
-                }} catch(e) {{}}
-              }}
-              return origDispatch.apply(this, arguments);
-            }};
-            patchedDispatch = makeNative(patchedDispatch, 'dispatchEvent');
-            EventTarget.prototype.dispatchEvent = patchedDispatch;
-          }}
-        }} catch(e) {{}}
 
         // Permissions API alignment on Permissions.prototype
         if (window.Permissions && window.Permissions.prototype && window.Permissions.prototype.query) {{
@@ -1615,9 +1614,6 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         '--enable-extensions',
         '--disable-blink-features=AutomationControlled',
         '--silent-debugger-extension-api',
-        '--extensions-on-chrome-urls',
-        '--disable-popup-blocking',
-        '--new-window',
         '--no-first-run',
         '--no-default-browser-check',
     ]
