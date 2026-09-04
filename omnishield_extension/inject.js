@@ -1566,10 +1566,15 @@
   } catch (e) {}
 
   // ==========================================
-  // 17. WEB WORKER & SHAREDWORKER SCOPE HOOKING
+  // 17. WEB WORKER GLOBAL SCOPE PREAMBLE
   // ==========================================
   try {
-    const workerShim = `try {
+    if (window.URL && window.URL.createObjectURL) {
+      const origCreateObjectURL = window.URL.createObjectURL;
+      const patchedCreateObjectURL = function(obj) {
+        try {
+          if (obj instanceof Blob && (obj.type.includes('javascript') || obj.type === '')) {
+            const shim = `try {
   const _wNav = self.navigator;
   if (_wNav) {
     const _p = {
@@ -1587,13 +1592,7 @@
   }
 } catch(e) {}
 `;
-
-    if (window.URL && window.URL.createObjectURL) {
-      const origCreateObjectURL = window.URL.createObjectURL;
-      const patchedCreateObjectURL = function(obj) {
-        try {
-          if (obj instanceof Blob && (obj.type.includes('javascript') || obj.type === '')) {
-            const modifiedBlob = new Blob([workerShim, '\n', obj], { type: obj.type || 'application/javascript' });
+            const modifiedBlob = new Blob([shim, '\n', obj], { type: obj.type || 'application/javascript' });
             return origCreateObjectURL.call(this, modifiedBlob);
           }
         } catch(e) {}
@@ -1601,50 +1600,6 @@
       };
       makeNative(patchedCreateObjectURL, 'createObjectURL');
       window.URL.createObjectURL = patchedCreateObjectURL;
-    }
-
-    if (window.Worker) {
-      const origWorker = window.Worker;
-      const PatchedWorker = function(scriptURL, options) {
-        let finalURL = scriptURL;
-        try {
-          if (typeof scriptURL === 'string' && !scriptURL.startsWith('blob:') && !scriptURL.startsWith('data:')) {
-            const bootstrap = `${workerShim}\nimportScripts(${JSON.stringify(new URL(scriptURL, window.location.href).href)});`;
-            const blob = new Blob([bootstrap], { type: 'application/javascript' });
-            finalURL = URL.createObjectURL(blob);
-          }
-        } catch(e) {}
-        try {
-          return new origWorker(finalURL, options);
-        } catch(e) {
-          return new origWorker(scriptURL, options);
-        }
-      };
-      PatchedWorker.prototype = origWorker.prototype;
-      makeNative(PatchedWorker, 'Worker');
-      window.Worker = PatchedWorker;
-    }
-
-    if (window.SharedWorker) {
-      const origSharedWorker = window.SharedWorker;
-      const PatchedSharedWorker = function(scriptURL, options) {
-        let finalURL = scriptURL;
-        try {
-          if (typeof scriptURL === 'string' && !scriptURL.startsWith('blob:') && !scriptURL.startsWith('data:')) {
-            const bootstrap = `${workerShim}\nimportScripts(${JSON.stringify(new URL(scriptURL, window.location.href).href)});`;
-            const blob = new Blob([bootstrap], { type: 'application/javascript' });
-            finalURL = URL.createObjectURL(blob);
-          }
-        } catch(e) {}
-        try {
-          return new origSharedWorker(finalURL, options);
-        } catch(e) {
-          return new origSharedWorker(scriptURL, options);
-        }
-      };
-      PatchedSharedWorker.prototype = origSharedWorker.prototype;
-      makeNative(PatchedSharedWorker, 'SharedWorker');
-      window.SharedWorker = PatchedSharedWorker;
     }
   } catch(e) {}
   // ==========================================
@@ -1760,7 +1715,7 @@
       const patchedStackGet = function() {
         const s = origStackGet.call(this);
         if (typeof s === 'string') {
-          return s.split('\n').filter(l => !l.includes('chrome-extension://') && !l.includes('inject.js')).join('\n');
+          return s.split('\n').filter(l => !l.includes('inject.js') && !l.includes('config.js')).join('\n');
         }
         return s;
       };
@@ -1782,7 +1737,7 @@
         if (!entries || !entries.length) return entries;
         return entries.filter(e => {
           const n = (e && e.name) ? String(e.name) : '';
-          return !n.includes('chrome-extension://') && !n.includes('moz-extension://') && !n.includes('inject.js');
+          return !n.includes('inject.js') && !n.includes('config.js');
         });
       }
 
@@ -1807,7 +1762,7 @@
       if (Performance.prototype.getEntriesByName) {
         const origGetEntriesByName = Performance.prototype.getEntriesByName;
         const patchedGetEntriesByName = function(name, type) {
-          if (typeof name === 'string' && (name.includes('chrome-extension://') || name.includes('inject.js'))) {
+          if (typeof name === 'string' && (name.includes('inject.js') || name.includes('config.js'))) {
             return [];
           }
           return sanitizePerfEntries(origGetEntriesByName.apply(this, arguments));

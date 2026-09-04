@@ -997,7 +997,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             const patchedStackGet = function() {{
               const s = origStackGet.call(this);
               if (typeof s === 'string') {{
-                return s.split('\\n').filter(l => !l.includes('chrome-extension://') && !l.includes('inject.js')).join('\\n');
+                return s.split('\\n').filter(l => !l.includes('inject.js') && !l.includes('config.js')).join('\\n');
               }}
               return s;
             }};
@@ -1017,7 +1017,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               if (!entries || !entries.length) return entries;
               return entries.filter(e => {{
                 const n = (e && e.name) ? String(e.name) : '';
-                return !n.includes('chrome-extension://') && !n.includes('moz-extension://') && !n.includes('inject.js');
+                return !n.includes('inject.js') && !n.includes('config.js');
               }});
             }}
             if (Performance.prototype.getEntries) {{
@@ -1035,7 +1035,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             if (Performance.prototype.getEntriesByName) {{
               const origGetN = Performance.prototype.getEntriesByName;
               const pGetN = function(name, type) {{
-                if (typeof name === 'string' && (name.includes('chrome-extension://') || name.includes('inject.js'))) return [];
+                if (typeof name === 'string' && (name.includes('inject.js') || name.includes('config.js'))) return [];
                 return sanitizePerf(origGetN.apply(this, arguments));
               }};
               makeNative(pGetN, 'getEntriesByName');
@@ -1366,10 +1366,11 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         print(f"[Stealth Engine] Note on search config: {e}", flush=True)
 
     # Build Chrome flags
-    if port == 9222:
+    if port == 9222 or not port:
         import socket
         allocated = None
-        for p in range(9200, 9500):
+        preferred_ports = [9222] + list(range(9223, 9300))
+        for p in preferred_ports:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(('127.0.0.1', p))
@@ -1388,6 +1389,7 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         CHROME_EXEC,
         f'--user-data-dir={user_data_dir}',
         f'--remote-debugging-port={port}',
+        f'--remote-allow-origins=*',
         f'--window-size={width},{height}',
         f'--load-extension={ext_list_str}',
         '--extension-mime-request-handling=always-prompt-for-install',
@@ -1395,11 +1397,6 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         '--new-window',
         '--no-first-run',
         '--no-default-browser-check',
-        '--disable-background-networking',
-        '--disable-blink-features=AutomationControlled',
-        '--test-type',
-        '--disable-infobars',
-        '--remote-allow-origins=*',
     ]
 
     if useragent:

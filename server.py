@@ -86,9 +86,10 @@ def is_port_open(port):
         return False
 
 def get_free_cdp_port():
-    """Returns an unused CDP port between 9200 and 9500 with socket check."""
+    """Returns an unused CDP port, prioritizing standard port 9222 for Puppeteer and Playwright."""
     used_ports = {info.get('port') for info in running_processes.values() if isinstance(info, dict) and info.get('port')}
-    for port in range(9200, 9500):
+    preferred_ports = [9222] + list(range(9223, 9500))
+    for port in preferred_ports:
         if port in used_ports:
             continue
         try:
@@ -896,7 +897,7 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 tz_env_line = f"set TZ={px_tz}\r\n" if px_tz else ""
                 lang_flag = f'--lang={px_locale} ' if px_locale else ""
 
-                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --disable-blink-features=AutomationControlled --test-type --disable-infobars --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
+                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
                 try:
                     with open(bat_path, 'w', encoding='utf-8') as bf:
                         bf.write(bat_content)
@@ -1332,6 +1333,8 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({
                 "success": True,
                 "pid": f"Port {cdp_port}",
+                "port": cdp_port,
+                "wsEndpoint": f"http://127.0.0.1:{cdp_port}",
                 "userDataDir": user_data_dir,
                 "command": f"python stealth_engine.py ({profile_id})"
             }).encode('utf-8'))

@@ -15,6 +15,7 @@ scratch/
 temp_*
 omnishield.log
 *.log
+*.bak
 
 # Profiles data (sessions, cookies, cache)
 profiles/
