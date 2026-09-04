@@ -391,6 +391,16 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           try {{ if (navigator.hasOwnProperty(p)) delete navigator[p]; }} catch(e) {{}}
         }}
 
+        // Clean automation driver globals
+        const autoGlobals = [
+          '__playwright', '__puppeteer_evaluation_script__',
+          '$cdc_asdjflasutopfhvcZLmcfl_', '$chrome_asyncScriptInfo',
+          'domAutomation', 'domAutomationController'
+        ];
+        for (const g of autoGlobals) {{
+          try {{ if (typeof window !== 'undefined' && g in window) delete window[g]; }} catch(e) {{}}
+        }}
+
         const isMac = {json.dumps('Macintosh' in ua_str or 'Mac OS X' in ua_str)};
         const isIOS = {json.dumps('iPhone' in ua_str or 'iPad' in ua_str)};
         const isIPad = {json.dumps('iPad' in ua_str)};
@@ -427,78 +437,98 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           defProtoGetter('maxTouchPoints', (isAndroid || isIOS) ? 5 : 0);
           defProtoGetter('pdfViewerEnabled', !(isAndroid || isIOS));
 
-          // Native Plugins & MimeTypes
-          function createPluginArray() {{
+          // Native Plugins & MimeTypes (Akamai Bot Manager & CreepJS Spec)
+          function buildPluginsAndMimes() {{
             if (isAndroid || isIOS) {{
-              const arr = Object.create(PluginArray.prototype);
-              Object.defineProperty(arr, 'length', {{ value: 0 }});
-              arr.item = makeNative(function() {{ return null; }}, 'item');
-              arr.namedItem = makeNative(function() {{ return null; }}, 'namedItem');
-              arr.refresh = makeNative(function() {{}}, 'refresh');
-              Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'PluginArray' }});
-              return arr;
+              const pArr = Object.create(PluginArray.prototype);
+              Object.defineProperty(pArr, 'length', {{ value: 0 }});
+              pArr.item = makeNative(function() {{ return null; }}, 'item');
+              pArr.namedItem = makeNative(function() {{ return null; }}, 'namedItem');
+              pArr.refresh = makeNative(function() {{}}, 'refresh');
+              Object.defineProperty(pArr, Symbol.toStringTag, {{ value: 'PluginArray' }});
+
+              const mArr = Object.create(MimeTypeArray.prototype);
+              Object.defineProperty(mArr, 'length', {{ value: 0 }});
+              mArr.item = makeNative(function() {{ return null; }}, 'item');
+              mArr.namedItem = makeNative(function() {{ return null; }}, 'namedItem');
+              Object.defineProperty(mArr, Symbol.toStringTag, {{ value: 'MimeTypeArray' }});
+
+              return {{ pluginArr: pArr, mimeArr: mArr }};
             }}
-            const plugins = [
+
+            const pluginsData = [
               {{ name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
               {{ name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
               {{ name: 'Chromium PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
               {{ name: 'Microsoft Edge PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }},
               {{ name: 'WebKit built-in PDF', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }}
             ];
-            const arr = Object.create(PluginArray.prototype);
-            plugins.forEach((p, idx) => {{
-              const pluginObj = Object.create(Plugin.prototype);
-              Object.defineProperty(pluginObj, 'name', {{ value: p.name, enumerable: true, configurable: true }});
-              Object.defineProperty(pluginObj, 'filename', {{ value: p.filename, enumerable: true, configurable: true }});
-              Object.defineProperty(pluginObj, 'description', {{ value: p.description, enumerable: true, configurable: true }});
-              Object.defineProperty(pluginObj, 'length', {{ value: 0, enumerable: true, configurable: true }});
-              Object.defineProperty(pluginObj, Symbol.toStringTag, {{ value: 'Plugin' }});
-              arr[idx] = pluginObj;
-              arr[p.name] = pluginObj;
-            }});
-            Object.defineProperty(arr, 'length', {{ value: plugins.length }});
-            arr.item = makeNative(function(i) {{ return this[i] || null; }}, 'item');
-            arr.namedItem = makeNative(function(name) {{ return this[name] || null; }}, 'namedItem');
-            arr.refresh = makeNative(function() {{}}, 'refresh');
-            Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'PluginArray' }});
-            return arr;
-          }}
 
-          const pluginArr = createPluginArray();
-          defProtoGetter('plugins', pluginArr);
-
-          function createMimeTypeArray(pluginList) {{
-            if (isAndroid || isIOS) {{
-              const arr = Object.create(MimeTypeArray.prototype);
-              Object.defineProperty(arr, 'length', {{ value: 0 }});
-              arr.item = makeNative(function() {{ return null; }}, 'item');
-              arr.namedItem = makeNative(function() {{ return null; }}, 'namedItem');
-              Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'MimeTypeArray' }});
-              return arr;
-            }}
-            const pdfPlugin = (pluginList && pluginList[0]) || null;
-            const mimes = [
-              {{ type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format', enabledPlugin: pdfPlugin }},
-              {{ type: 'text/pdf', suffixes: 'pdf', description: 'Portable Document Format', enabledPlugin: pdfPlugin }}
+            const mimesData = [
+              {{ type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format' }},
+              {{ type: 'text/pdf', suffixes: 'pdf', description: 'Portable Document Format' }}
             ];
-            const arr = Object.create(MimeTypeArray.prototype);
-            mimes.forEach((m, idx) => {{
-              const mimeObj = Object.create(MimeType.prototype);
-              Object.defineProperty(mimeObj, 'type', {{ value: m.type, enumerable: true, configurable: true }});
-              Object.defineProperty(mimeObj, 'suffixes', {{ value: m.suffixes, enumerable: true, configurable: true }});
-              Object.defineProperty(mimeObj, 'description', {{ value: m.description, enumerable: true, configurable: true }});
-              Object.defineProperty(mimeObj, 'enabledPlugin', {{ value: m.enabledPlugin, enumerable: true, configurable: true }});
-              Object.defineProperty(mimeObj, Symbol.toStringTag, {{ value: 'MimeType' }});
-              arr[idx] = mimeObj;
-              arr[m.type] = mimeObj;
+
+            const pArr = Object.create(PluginArray.prototype);
+            const mArr = Object.create(MimeTypeArray.prototype);
+
+            const mimeObjs = mimesData.map(m => {{
+              const obj = Object.create(MimeType.prototype);
+              Object.defineProperty(obj, 'type', {{ value: m.type, enumerable: true, configurable: true }});
+              Object.defineProperty(obj, 'suffixes', {{ value: m.suffixes, enumerable: true, configurable: true }});
+              Object.defineProperty(obj, 'description', {{ value: m.description, enumerable: true, configurable: true }});
+              Object.defineProperty(obj, Symbol.toStringTag, {{ value: 'MimeType' }});
+              return obj;
             }});
-            Object.defineProperty(arr, 'length', {{ value: mimes.length }});
-            arr.item = makeNative(function(i) {{ return this[i] || null; }}, 'item');
-            arr.namedItem = makeNative(function(name) {{ return this[name] || null; }}, 'namedItem');
-            Object.defineProperty(arr, Symbol.toStringTag, {{ value: 'MimeTypeArray' }});
-            return arr;
+
+            const pluginObjs = pluginsData.map(p => {{
+              const obj = Object.create(Plugin.prototype);
+              Object.defineProperty(obj, 'name', {{ value: p.name, enumerable: true, configurable: true }});
+              Object.defineProperty(obj, 'filename', {{ value: p.filename, enumerable: true, configurable: true }});
+              Object.defineProperty(obj, 'description', {{ value: p.description, enumerable: true, configurable: true }});
+              Object.defineProperty(obj, 'length', {{ value: mimeObjs.length, enumerable: true, configurable: true }});
+              Object.defineProperty(obj, Symbol.toStringTag, {{ value: 'Plugin' }});
+
+              mimeObjs.forEach((m, mIdx) => {{
+                obj[mIdx] = m;
+                obj[m.type] = m;
+              }});
+
+              obj.item = makeNative(function(i) {{ return this[i] || null; }}, 'item');
+              obj.namedItem = makeNative(function(name) {{ return this[name] || null; }}, 'namedItem');
+              return obj;
+            }});
+
+            // Point each mimeType's enabledPlugin to the primary PDF Viewer plugin
+            mimeObjs.forEach(m => {{
+              Object.defineProperty(m, 'enabledPlugin', {{ value: pluginObjs[0], enumerable: true, configurable: true }});
+            }});
+
+            pluginObjs.forEach((p, idx) => {{
+              pArr[idx] = p;
+              pArr[p.name] = p;
+            }});
+            Object.defineProperty(pArr, 'length', {{ value: pluginObjs.length }});
+            pArr.item = makeNative(function(i) {{ return this[i] || null; }}, 'item');
+            pArr.namedItem = makeNative(function(name) {{ return this[name] || null; }}, 'namedItem');
+            pArr.refresh = makeNative(function() {{}}, 'refresh');
+            Object.defineProperty(pArr, Symbol.toStringTag, {{ value: 'PluginArray' }});
+
+            mimeObjs.forEach((m, idx) => {{
+              mArr[idx] = m;
+              mArr[m.type] = m;
+            }});
+            Object.defineProperty(mArr, 'length', {{ value: mimeObjs.length }});
+            mArr.item = makeNative(function(i) {{ return this[i] || null; }}, 'item');
+            mArr.namedItem = makeNative(function(name) {{ return this[name] || null; }}, 'namedItem');
+            Object.defineProperty(mArr, Symbol.toStringTag, {{ value: 'MimeTypeArray' }});
+
+            return {{ pluginArr: pArr, mimeArr: mArr }};
           }}
-          defProtoGetter('mimeTypes', createMimeTypeArray(pluginArr));
+
+          const {{ pluginArr, mimeArr }} = buildPluginsAndMimes();
+          defProtoGetter('plugins', pluginArr);
+          defProtoGetter('mimeTypes', mimeArr);
 
           // Native userAgentData
           if (typeof NavigatorUAData !== 'undefined') {{
@@ -724,7 +754,25 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               targetWin.HTMLCanvasElement.prototype.getContext = patchedGetCtx;
             }}
 
+            function isFingerprintCanvas(canvas, w, h) {{
+              if (!canvas) return true;
+              try {{
+                const id = (canvas.id || '').toLowerCase();
+                const cls = (canvas.className || '').toLowerCase();
+                if (id.includes('captcha') || cls.includes('captcha') || id.includes('cimage') || id.includes('captcha-img')) {{
+                  return false;
+                }}
+                if (canvas.isConnected) {{
+                  return false;
+                }}
+              }} catch (e) {{}}
+              return true;
+            }}
+
             const patchedToDataURL = function() {{
+              if (!isFingerprintCanvas(this, this.width, this.height)) {{
+                return origToDataURL.apply(this, arguments);
+              }}
               try {{
                 const ctxType = canvasContextMap.get(this);
                 if (this.width >= 16 && this.height >= 16) {{
@@ -759,6 +807,10 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
             const patchedGetImageData = function(x, y, w, h) {{
               const res = origGetImageData.apply(this, arguments);
+              const canvasEl = this.canvas;
+              if (!isFingerprintCanvas(canvasEl, w, h)) {{
+                return res;
+              }}
               try {{
                 if (res && res.data && w >= 16 && h >= 16) applyPixelNoise(res.data);
               }} catch (e) {{}}
@@ -768,6 +820,9 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             targetWin.CanvasRenderingContext2D.prototype.getImageData = patchedGetImageData;
 
             const patchedToBlob = function(callback, type, quality) {{
+              if (!isFingerprintCanvas(this, this.width, this.height)) {{
+                return origToBlob.call(this, callback, type, quality);
+              }}
               try {{
                 const ctxType = canvasContextMap.get(this);
                 if (this.width >= 16 && this.height >= 16) {{
@@ -887,17 +942,52 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           }}
         }} catch (e) {{}}
 
-        // Document focus alignment
+        // Document focus alignment (prototype-only to prevent ownProperty detection)
         try {{
-          if (typeof document !== 'undefined' && document.hasFocus) {{
-            const origHasFocus = document.hasFocus;
+          if (typeof Document !== 'undefined' && Document.prototype && Document.prototype.hasFocus) {{
+            const origHasFocus = Document.prototype.hasFocus;
             const patchedHasFocus = function() {{ return true; }};
             makeNative(patchedHasFocus, 'hasFocus');
-            document.hasFocus = patchedHasFocus;
+            Document.prototype.hasFocus = patchedHasFocus;
+          }}
+          if (typeof document !== 'undefined' && document.hasOwnProperty('hasFocus')) {{
+            delete document.hasFocus;
           }}
         }} catch(e) {{}}
 
-        // Notification permission alignment
+        // Permissions API alignment on Permissions.prototype
+        if (window.Permissions && window.Permissions.prototype && window.Permissions.prototype.query) {{
+          try {{
+            const origPermQuery = window.Permissions.prototype.query;
+            const patchedPermQuery = function(parameters) {{
+              if (parameters && parameters.name === 'notifications') {{
+                const notifPerm = (window.Notification && window.Notification.permission) || 'default';
+                const notifState = (notifPerm === 'granted') ? 'granted' : ((notifPerm === 'denied') ? 'denied' : 'prompt');
+                const mockStatus = {{
+                  state: notifState,
+                  name: 'notifications',
+                  onchange: null,
+                  addEventListener: makeNative(function() {{}}, 'addEventListener'),
+                  removeEventListener: makeNative(function() {{}}, 'removeEventListener'),
+                  dispatchEvent: makeNative(function() {{ return true; }}, 'dispatchEvent'),
+                  [Symbol.toStringTag]: 'PermissionStatus'
+                }};
+                if (window.PermissionStatus && window.PermissionStatus.prototype) {{
+                  Object.setPrototypeOf(mockStatus, window.PermissionStatus.prototype);
+                }}
+                return Promise.resolve(mockStatus);
+              }}
+              return origPermQuery.apply(this, arguments);
+            }};
+            makeNative(patchedPermQuery, 'query');
+            window.Permissions.prototype.query = patchedPermQuery;
+            if (navigator.permissions && navigator.permissions.hasOwnProperty('query')) {{
+              delete navigator.permissions.query;
+            }}
+          }} catch (e) {{}}
+        }}
+
+        // Notification permission alignment (non-enumerable matching native V8)
         try {{
           if (typeof window !== 'undefined' && window.Notification) {{
             const getNotifPerm = function() {{ return 'default'; }};
@@ -905,11 +995,17 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             Object.defineProperty(window.Notification, 'permission', {{
               get: getNotifPerm,
               configurable: true,
-              enumerable: true
+              enumerable: false
             }});
 
             if (window.Notification.requestPermission) {{
-              const patchedReqPerm = async function() {{ return 'default'; }};
+              const patchedReqPerm = function(callback) {{
+                const res = Promise.resolve('default');
+                if (typeof callback === 'function') {{
+                  try {{ callback('default'); }} catch(e) {{}}
+                }}
+                return res;
+              }};
               makeNative(patchedReqPerm, 'requestPermission');
               window.Notification.requestPermission = patchedReqPerm;
             }}
@@ -1306,13 +1402,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 }))
                 await ws.recv()
 
-            # 6. Navigate to target URL (triggers extension + CDP scripts on fresh load)
-            await ws.send(json.dumps({
-                "id": 5,
-                "method": "Page.navigate",
-                "params": { "url": target_url }
-            }))
-            await ws.recv()
+            # 6. Page navigation handled natively on launch (preventing duplicate request/refresh token invalidation)
 
             # 7. Bring window to front desktop focus
             try:
@@ -1352,7 +1442,7 @@ def sanitize_user_agent(ua, os_hint=""):
     return ua
 
 
-def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str, port=9222, url="https://browserleaks.com/canvas", webgl_vendor="Google Inc. (NVIDIA)", webgl_renderer="ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", cpu_cores=8, memory_gb=16, proxy_user="", proxy_pass="", timezone_id="America/New_York", custom_extensions=None, fingerprint_seed=None, locale="", accept_language="", webrtc="Proxy IP"):
+def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str, port=9222, url="about:blank", webgl_vendor="Google Inc. (NVIDIA)", webgl_renderer="ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", cpu_cores=8, memory_gb=16, proxy_user="", proxy_pass="", timezone_id="America/New_York", custom_extensions=None, fingerprint_seed=None, locale="", accept_language="", webrtc="Proxy IP"):
     useragent = sanitize_user_agent(useragent, name)
     print(f"[Stealth Engine] launch_stealth_profile called for: {name} (proxy={bool(proxy_str)}, tz={timezone_id}, seed={fingerprint_seed})", flush=True)
 
@@ -1570,7 +1660,7 @@ if __name__ == '__main__':
             useragent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/605.1.15",
             proxy_str="",
             port=9230,
-            url="https://browserleaks.com/canvas",
+            url="about:blank",
             webgl_vendor="Apple Inc.",
             webgl_renderer="Apple GPU",
             cpu_cores=6,
@@ -1585,7 +1675,7 @@ if __name__ == '__main__':
             useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
             proxy_str="",
             port=9231,
-            url="https://browserleaks.com/canvas",
+            url="about:blank",
             webgl_vendor="Apple Inc.",
             webgl_renderer="Apple M2",
             cpu_cores=8,

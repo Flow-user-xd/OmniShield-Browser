@@ -1,5 +1,79 @@
 [
   {
+    "id": "prof-1788526594123",
+    "name": "Lenovo ThinkStation P8 #601",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36",
+    "resolution": {
+      "width": 3840,
+      "height": 2160,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 14,
+      "memoryGb": 64,
+      "webGlVendor": "Google Inc. (NVIDIA)",
+      "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "Asia/Kolkata"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
+    "id": "prof-1788526222577",
+    "name": "Microsoft Surface Pro 10 #819",
+    "tags": [
+      "Randomized",
+      "Chrome"
+    ],
+    "status": "stopped",
+    "os": "Windows 11",
+    "browser": "Chrome 150",
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.95 Safari/537.36",
+    "resolution": {
+      "width": 2880,
+      "height": 1920,
+      "dpr": 1
+    },
+    "hardware": {
+      "cpuCores": 14,
+      "memoryGb": 32,
+      "webGlVendor": "Google Inc. (Intel)",
+      "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
+      "canvasNoise": "Noise"
+    },
+    "proxy": {
+      "enabled": false,
+      "type": "SOCKS5",
+      "ip": "",
+      "port": "",
+      "username": "",
+      "password": "",
+      "location": "Direct Network",
+      "timezone": "Asia/Kolkata"
+    },
+    "storage": {
+      "cookiesCount": 0
+    }
+  },
+  {
     "id": "prof-1788525144538",
     "name": "Dell OptiPlex 7020 Corporate PC #561",
     "tags": [

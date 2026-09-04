@@ -137,6 +137,18 @@
         enumerable: true
       });
     }
+    const autoGlobals = [
+      '__playwright', '__puppeteer_evaluation_script__',
+      '$cdc_asdjflasutopfhvcZLmcfl_', '$chrome_asyncScriptInfo',
+      'domAutomation', 'domAutomationController'
+    ];
+    for (const g of autoGlobals) {
+      try {
+        if (typeof window !== 'undefined' && g in window) {
+          delete window[g];
+        }
+      } catch(e) {}
+    }
   } catch (e) {}
 
   // ==========================================
@@ -447,13 +459,16 @@
     }
   } catch (e) {}
 
-  // Document Focus & Visibility Alignment
+  // Document Focus & Visibility Alignment (prototype-only to prevent detection)
   try {
-    if (typeof document !== 'undefined' && document.hasFocus) {
-      const origHasFocus = document.hasFocus;
+    if (typeof Document !== 'undefined' && Document.prototype && Document.prototype.hasFocus) {
+      const origHasFocus = Document.prototype.hasFocus;
       const patchedHasFocus = function() { return true; };
       makeNative(patchedHasFocus, 'hasFocus');
-      document.hasFocus = patchedHasFocus;
+      Document.prototype.hasFocus = patchedHasFocus;
+    }
+    if (typeof document !== 'undefined' && document.hasOwnProperty('hasFocus')) {
+      delete document.hasFocus;
     }
   } catch(e) {}
 
@@ -608,8 +623,26 @@
         }
       }
 
+      function isFingerprintCanvas(canvas, w, h) {
+        if (isIntegrityCanvas(w, h)) return false;
+        if (!canvas) return true;
+        try {
+          const id = (canvas.id || '').toLowerCase();
+          const cls = (canvas.className || '').toLowerCase();
+          if (id.includes('captcha') || cls.includes('captcha') || id.includes('cimage') || id.includes('captcha-img')) {
+            return false;
+          }
+          // Connected canvases are visible functional UI elements (e.g. Captchas, signatures, charts)
+          // Anti-bot fingerprinters (CreepJS, BrowserLeaks, Akamai) always measure offscreen/detached canvases
+          if (canvas.isConnected) {
+            return false;
+          }
+        } catch (e) {}
+        return true;
+      }
+
       const patchedToDataURL = function() {
-        if (isIntegrityCanvas(this.width, this.height)) {
+        if (!isFingerprintCanvas(this, this.width, this.height)) {
           return origToDataURL.apply(this, arguments);
         }
         try {
@@ -646,7 +679,8 @@
 
       const patchedGetImageData = function(x, y, w, h) {
         const res = origGetImageData.apply(this, arguments);
-        if (isIntegrityCanvas(w, h)) {
+        const canvasEl = this.canvas;
+        if (!isFingerprintCanvas(canvasEl, w, h)) {
           return res;
         }
         try {
@@ -660,7 +694,7 @@
       targetWin.CanvasRenderingContext2D.prototype.getImageData = patchedGetImageData;
 
       const patchedToBlob = function(callback, type, quality) {
-        if (isIntegrityCanvas(this.width, this.height)) {
+        if (!isFingerprintCanvas(this, this.width, this.height)) {
           return origToBlob.call(this, callback, type, quality);
         }
         try {
@@ -968,76 +1002,95 @@
   // ==========================================
   try {
     const isMobileOS = (targetOSName === 'Android' || targetOSName === 'iOS');
-    function createPluginArray() {
+
+    function buildPluginsAndMimes() {
       if (isMobileOS) {
-        const arr = Object.create(PluginArray.prototype);
-        Object.defineProperty(arr, 'length', { value: 0 });
-        arr.item = makeNative(function() { return null; }, 'item');
-        arr.namedItem = makeNative(function() { return null; }, 'namedItem');
-        arr.refresh = makeNative(function() {}, 'refresh');
-        Object.defineProperty(arr, Symbol.toStringTag, { value: 'PluginArray' });
-        return arr;
+        const pArr = Object.create(PluginArray.prototype);
+        Object.defineProperty(pArr, 'length', { value: 0 });
+        pArr.item = makeNative(function() { return null; }, 'item');
+        pArr.namedItem = makeNative(function() { return null; }, 'namedItem');
+        pArr.refresh = makeNative(function() {}, 'refresh');
+        Object.defineProperty(pArr, Symbol.toStringTag, { value: 'PluginArray' });
+
+        const mArr = Object.create(MimeTypeArray.prototype);
+        Object.defineProperty(mArr, 'length', { value: 0 });
+        mArr.item = makeNative(function() { return null; }, 'item');
+        mArr.namedItem = makeNative(function() { return null; }, 'namedItem');
+        Object.defineProperty(mArr, Symbol.toStringTag, { value: 'MimeTypeArray' });
+        return { pluginArr: pArr, mimeArr: mArr };
       }
-      const plugins = [
+
+      const pluginsData = [
         { name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
         { name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
         { name: 'Chromium PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
         { name: 'Microsoft Edge PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
         { name: 'WebKit built-in PDF', filename: 'internal-pdf-viewer', description: 'Portable Document Format' }
       ];
-      const arr = Object.create(PluginArray.prototype);
-      plugins.forEach((p, idx) => {
-        const pluginObj = Object.create(Plugin.prototype);
-        Object.defineProperty(pluginObj, 'name', { value: p.name, enumerable: true, configurable: true });
-        Object.defineProperty(pluginObj, 'filename', { value: p.filename, enumerable: true, configurable: true });
-        Object.defineProperty(pluginObj, 'description', { value: p.description, enumerable: true, configurable: true });
-        Object.defineProperty(pluginObj, 'length', { value: 0, enumerable: true, configurable: true });
-        Object.defineProperty(pluginObj, Symbol.toStringTag, { value: 'Plugin' });
-        arr[idx] = pluginObj;
-        arr[p.name] = pluginObj;
-      });
-      Object.defineProperty(arr, 'length', { value: plugins.length });
-      arr.item = makeNative(function(i) { return this[i] || null; }, 'item');
-      arr.namedItem = makeNative(function(name) { return this[name] || null; }, 'namedItem');
-      arr.refresh = makeNative(function() {}, 'refresh');
-      Object.defineProperty(arr, Symbol.toStringTag, { value: 'PluginArray' });
-      return arr;
-    }
 
-    function createMimeTypeArray(pluginList) {
-      if (isMobileOS) {
-        const arr = Object.create(MimeTypeArray.prototype);
-        Object.defineProperty(arr, 'length', { value: 0 });
-        arr.item = makeNative(function() { return null; }, 'item');
-        arr.namedItem = makeNative(function() { return null; }, 'namedItem');
-        Object.defineProperty(arr, Symbol.toStringTag, { value: 'MimeTypeArray' });
-        return arr;
-      }
-      const pdfPlugin = (pluginList && pluginList[0]) || null;
-      const mimes = [
-        { type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format', enabledPlugin: pdfPlugin },
-        { type: 'text/pdf', suffixes: 'pdf', description: 'Portable Document Format', enabledPlugin: pdfPlugin }
+      const mimesData = [
+        { type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format' },
+        { type: 'text/pdf', suffixes: 'pdf', description: 'Portable Document Format' }
       ];
-      const arr = Object.create(MimeTypeArray.prototype);
-      mimes.forEach((m, idx) => {
-        const mimeObj = Object.create(MimeType.prototype);
-        Object.defineProperty(mimeObj, 'type', { value: m.type, enumerable: true, configurable: true });
-        Object.defineProperty(mimeObj, 'suffixes', { value: m.suffixes, enumerable: true, configurable: true });
-        Object.defineProperty(mimeObj, 'description', { value: m.description, enumerable: true, configurable: true });
-        Object.defineProperty(mimeObj, 'enabledPlugin', { value: m.enabledPlugin, enumerable: true, configurable: true });
-        Object.defineProperty(mimeObj, Symbol.toStringTag, { value: 'MimeType' });
-        arr[idx] = mimeObj;
-        arr[m.type] = mimeObj;
+
+      const pArr = Object.create(PluginArray.prototype);
+      const mArr = Object.create(MimeTypeArray.prototype);
+
+      const mimeObjs = mimesData.map(m => {
+        const obj = Object.create(MimeType.prototype);
+        Object.defineProperty(obj, 'type', { value: m.type, enumerable: true, configurable: true });
+        Object.defineProperty(obj, 'suffixes', { value: m.suffixes, enumerable: true, configurable: true });
+        Object.defineProperty(obj, 'description', { value: m.description, enumerable: true, configurable: true });
+        Object.defineProperty(obj, Symbol.toStringTag, { value: 'MimeType' });
+        return obj;
       });
-      Object.defineProperty(arr, 'length', { value: mimes.length });
-      arr.item = makeNative(function(i) { return this[i] || null; }, 'item');
-      arr.namedItem = makeNative(function(name) { return this[name] || null; }, 'namedItem');
-      Object.defineProperty(arr, Symbol.toStringTag, { value: 'MimeTypeArray' });
-      return arr;
+
+      const pluginObjs = pluginsData.map(p => {
+        const obj = Object.create(Plugin.prototype);
+        Object.defineProperty(obj, 'name', { value: p.name, enumerable: true, configurable: true });
+        Object.defineProperty(obj, 'filename', { value: p.filename, enumerable: true, configurable: true });
+        Object.defineProperty(obj, 'description', { value: p.description, enumerable: true, configurable: true });
+        Object.defineProperty(obj, 'length', { value: mimeObjs.length, enumerable: true, configurable: true });
+        Object.defineProperty(obj, Symbol.toStringTag, { value: 'Plugin' });
+
+        mimeObjs.forEach((m, mIdx) => {
+          obj[mIdx] = m;
+          obj[m.type] = m;
+        });
+
+        obj.item = makeNative(function(i) { return this[i] || null; }, 'item');
+        obj.namedItem = makeNative(function(name) { return this[name] || null; }, 'namedItem');
+        return obj;
+      });
+
+      // Point each mimeType's enabledPlugin to the primary PDF Viewer plugin
+      mimeObjs.forEach(m => {
+        Object.defineProperty(m, 'enabledPlugin', { value: pluginObjs[0], enumerable: true, configurable: true });
+      });
+
+      pluginObjs.forEach((p, idx) => {
+        pArr[idx] = p;
+        pArr[p.name] = p;
+      });
+      Object.defineProperty(pArr, 'length', { value: pluginObjs.length });
+      pArr.item = makeNative(function(i) { return this[i] || null; }, 'item');
+      pArr.namedItem = makeNative(function(name) { return this[name] || null; }, 'namedItem');
+      pArr.refresh = makeNative(function() {}, 'refresh');
+      Object.defineProperty(pArr, Symbol.toStringTag, { value: 'PluginArray' });
+
+      mimeObjs.forEach((m, idx) => {
+        mArr[idx] = m;
+        mArr[m.type] = m;
+      });
+      Object.defineProperty(mArr, 'length', { value: mimeObjs.length });
+      mArr.item = makeNative(function(i) { return this[i] || null; }, 'item');
+      mArr.namedItem = makeNative(function(name) { return this[name] || null; }, 'namedItem');
+      Object.defineProperty(mArr, Symbol.toStringTag, { value: 'MimeTypeArray' });
+
+      return { pluginArr: pArr, mimeArr: mArr };
     }
 
-    const pluginArr = createPluginArray();
-    const mimeArr = createMimeTypeArray(pluginArr);
+    const { pluginArr, mimeArr } = buildPluginsAndMimes();
 
     if (window.Navigator && window.Navigator.prototype) {
       const getPlugins = function() { return pluginArr; };
@@ -1095,7 +1148,7 @@
       } catch (e) {}
     }
 
-    // Notification.permission & requestPermission alignment
+    // Notification.permission & requestPermission alignment (non-enumerable matching native V8)
     if (typeof window !== 'undefined' && window.Notification) {
       try {
         const getNotifPerm = function() { return 'default'; };
@@ -1103,11 +1156,17 @@
         Object.defineProperty(window.Notification, 'permission', {
           get: getNotifPerm,
           configurable: true,
-          enumerable: true
+          enumerable: false
         });
 
         if (window.Notification.requestPermission) {
-          const patchedReqPerm = async function() { return 'default'; };
+          const patchedReqPerm = function(callback) {
+            const res = Promise.resolve('default');
+            if (typeof callback === 'function') {
+              try { callback('default'); } catch(e) {}
+            }
+            return res;
+          };
           makeNative(patchedReqPerm, 'requestPermission');
           window.Notification.requestPermission = patchedReqPerm;
         }

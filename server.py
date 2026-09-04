@@ -901,8 +901,9 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
 
                 tz_env_line = f"set TZ={px_tz}\r\n" if px_tz else ""
                 lang_flag = f'--lang={px_locale} ' if px_locale else ""
+                target_start_url = prof.get("startUrl") or "about:blank"
 
-                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --disable-blink-features=AutomationControlled --silent-debugger-extension-api --extensions-on-chrome-urls --disable-popup-blocking --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
+                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --disable-blink-features=AutomationControlled --silent-debugger-extension-api --extensions-on-chrome-urls --disable-popup-blocking --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --no-first-run --no-default-browser-check {target_start_url}\r\n'
                 try:
                     with open(bat_path, 'w', encoding='utf-8') as bf:
                         bf.write(bat_content)
@@ -939,7 +940,8 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                     with open(bat_path, 'r', encoding='utf-8') as bf:
                         bat_content = bf.read()
                 else:
-                    bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile...\r\nstart "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --no-first-run https://browserleaks.com/canvas\r\n'
+                    target_start_url = prof.get("startUrl") or "about:blank"
+                    bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile...\r\nstart "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --no-first-run {target_start_url}\r\n'
 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/x-bat')
@@ -1305,9 +1307,10 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
 
             def _launch_wrapper():
                 try:
+                    launch_url = profile.get('startUrl') or "about:blank"
                     real_pid, port_used, active_bridge = launch_stealth_profile(
                         profile_id, profile['name'], width, height, useragent,
-                        proxy_str, cdp_port, "https://browserleaks.com/canvas",
+                        proxy_str, cdp_port, launch_url,
                         webgl_vendor, webgl_renderer, cpu_cores, memory_gb,
                         proxy_user, proxy_pass, proxy_tz,
                         custom_extensions=profile.get('customExtensions') or [],

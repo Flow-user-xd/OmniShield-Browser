@@ -1120,7 +1120,8 @@
     const h = prof.resolution?.height || 1080;
     const ua = prof.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36';
 
-    const commonFlags = `--user-data-dir="${userDataDir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="${extDir}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --disable-blink-features=AutomationControlled --silent-debugger-extension-api --extensions-on-chrome-urls --disable-popup-blocking --window-size=${w},${h} --user-agent="${ua}" ${proxyFlag} --no-first-run --no-default-browser-check https://browserleaks.com/canvas`;
+    const targetUrl = prof.startUrl || 'about:blank';
+    const commonFlags = `--user-data-dir="${userDataDir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="${extDir}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --disable-blink-features=AutomationControlled --silent-debugger-extension-api --extensions-on-chrome-urls --disable-popup-blocking --window-size=${w},${h} --user-agent="${ua}" ${proxyFlag} --no-first-run --no-default-browser-check ${targetUrl}`;
 
     const cmd = `"${chromePath}" ${commonFlags}`;
     const ps = `& "${chromePath}" ${commonFlags}`;
