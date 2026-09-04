@@ -327,16 +327,24 @@ class ProxyBridge:
         return buf
 
     def _relay(self, s1, s2):
-        """Bidirectional data relay between two sockets."""
+        """High-throughput bidirectional data relay with TCP_NODELAY and optimized buffer sizes."""
         sockets = [s1, s2]
+        for s in sockets:
+            try:
+                s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 262144)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 262144)
+            except Exception:
+                pass
+
         try:
             while self.running:
-                readable, _, errored = select.select(sockets, [], sockets, 10.0)
+                readable, _, errored = select.select(sockets, [], sockets, 5.0)
                 if errored:
                     break
                 for s in readable:
                     other = s2 if s is s1 else s1
-                    data = s.recv(65536)
+                    data = s.recv(131072)
                     if not data:
                         return
                     other.sendall(data)

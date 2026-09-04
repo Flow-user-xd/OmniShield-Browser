@@ -41,9 +41,9 @@ EXTENSION_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__))
 os.makedirs(PROFILES_DIR, exist_ok=True)
 
 
-def compute_profile_fingerprint_seeds(profile_id):
-    """Compute unique fingerprint noise seeds from profile ID using SHA256."""
-    hash_val = int(hashlib.sha256(str(profile_id).encode('utf-8')).hexdigest(), 16)
+def compute_profile_fingerprint_seeds(seed_str):
+    """Compute unique fingerprint noise seeds from seed string or profile ID using SHA256."""
+    hash_val = int(hashlib.sha256(str(seed_str).encode('utf-8')).hexdigest(), 16)
     return {
         'canvasR': (hash_val % 200) + 1,              # 1-200
         'canvasG': ((hash_val >> 8) % 200) + 1,       # 1-200
@@ -53,7 +53,7 @@ def compute_profile_fingerprint_seeds(profile_id):
     }
 
 
-def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, timezone_id="", width=1920, height=1080, useragent=""):
+def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, timezone_id="", width=1920, height=1080, useragent="", fingerprint_seed=None):
     """
     Create a per-profile copy of the OmniShield extension with unique config.js.
     Returns the path to the per-profile extension directory.
@@ -69,8 +69,19 @@ def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_ren
     # Copy the base extension template
     shutil.copytree(EXTENSION_TEMPLATE_DIR, ext_dir)
 
-    # Compute unique seeds for this profile
-    seeds = compute_profile_fingerprint_seeds(profile_id)
+    # Clear cached DNR rules and Service Worker caches in user_data_dir to guarantee fresh rule compilation
+    default_dir = os.path.join(user_data_dir, 'Default')
+    for dname in ['DNR Extension Rules', 'Service Worker', 'Cache']:
+        target_cache = os.path.join(default_dir, dname)
+        if os.path.exists(target_cache):
+            try:
+                shutil.rmtree(target_cache, ignore_errors=True)
+            except Exception:
+                pass
+
+    # Compute unique seeds for this profile using fingerprint_seed if available
+    seed_str = fingerprint_seed or profile_id
+    seeds = compute_profile_fingerprint_seeds(seed_str)
 
     # Generate the per-profile config.js
     config_content = f"""// OmniShield Profile Config - Auto-generated for: {profile_id}
@@ -109,7 +120,7 @@ if (typeof window !== 'undefined') window.__OMNI_CONFIG = OMNI_CFG;
     return ext_dir
 
 
-async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user="", proxy_pass="", profile_id="prof-1", timezone_id="America/New_York"):
+async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user="", proxy_pass="", profile_id="prof-1", timezone_id="America/New_York", fingerprint_seed=None):
     """CDP fallback: Apply stealth overrides via Chrome DevTools Protocol websocket."""
     ws_url = None
     for attempt in range(30):  # 30 retries x 0.5s = 15s max wait
@@ -135,10 +146,12 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
     print(f"[Stealth Engine CDP] WebSocket Connected: {ws_url}", flush=True)
 
-    seeds = compute_profile_fingerprint_seeds(profile_id)
+    seeds = compute_profile_fingerprint_seeds(fingerprint_seed or profile_id)
     chrome_m_cdp = re.search(r'(?:Chrome|CriOS)/(\d+)\.([\d.]+)', ua_str)
     c_major = chrome_m_cdp.group(1) if chrome_m_cdp else '131'
     c_full = f"{c_major}.{chrome_m_cdp.group(2)}" if chrome_m_cdp else '131.0.6778.265'
+
+    target_dpr = 2 if ('Macintosh' in ua_str or 'Mac OS X' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str) else 1
 
     # Build the CDP injection payload (serves as a secondary reinforcement of extension injection)
     cdp_payload = f"""
@@ -164,7 +177,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           try {{ Object.defineProperties(window.screen, screenDescriptors); }} catch(e) {{}}
         }}
         try {{
-          Object.defineProperty(window, 'devicePixelRatio', {{ get: () => 1, configurable: true }});
+          Object.defineProperty(window, 'devicePixelRatio', {{ get: () => {target_dpr}, configurable: true }});
           Object.defineProperty(window, 'outerWidth', {{ get: () => targetW, configurable: true }});
           Object.defineProperty(window, 'outerHeight', {{ get: () => targetH - 40, configurable: true }});
           Object.defineProperty(window, 'innerWidth', {{ get: () => targetW, configurable: true }});
@@ -267,7 +280,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         const osName = isMac ? 'macOS' : (isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Windows'));
         const isMobile = isIOS || isMobileUA;
         const verStr = isMac ? '14.2.0' : (isIOS ? '17.2' : (isAndroid ? '14' : '10.0.0'));
-        const archStr = (isMac || isIOS || isAndroid) ? 'arm' : 'x86';
+        const archStr = (isMac ? ((vendor.includes('Apple') || renderer.includes('Apple')) ? 'arm' : 'x86') : ((isIOS || isAndroid) ? 'arm' : 'x86'));
         const modelStr = isIOS ? 'iPhone' : '';
 
         if (typeof Navigator !== 'undefined' && Navigator.prototype) {{
@@ -335,21 +348,21 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           // Native userAgentData
           if (typeof NavigatorUAData !== 'undefined') {{
             const brands = Object.freeze([
-              Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_major)} }}),
               Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_major)} }}),
+              Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_major)} }}),
               Object.freeze({{ brand: 'Not_A Brand', version: '24' }})
             ]);
             const highEntropy = {{
               architecture: archStr,
               bitness: '64',
               brands: Object.freeze([
-                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
                 Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_full)} }}),
+                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
                 Object.freeze({{ brand: 'Not_A Brand', version: '24.0.0.0' }})
               ]),
               fullVersionList: Object.freeze([
-                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
                 Object.freeze({{ brand: 'Chromium', version: {json.dumps(c_full)} }}),
+                Object.freeze({{ brand: 'Google Chrome', version: {json.dumps(c_full)} }}),
                 Object.freeze({{ brand: 'Not_A Brand', version: '24.0.0.0' }})
               ]),
               mobile: isMobile,
@@ -405,10 +418,33 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         }}
       }} catch(e) {{}}
 
+      // Media Devices spoofing (Physical Microphone & HD Camera)
+      try {{
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {{
+          const isMac = {json.dumps('Mac' in ua_str)};
+          const micLabel = isMac ? 'MacBook Pro Microphone (Built-in)' : 'Microphone (Realtek(R) Audio)';
+          const speakerLabel = isMac ? 'MacBook Pro Speakers (Built-in)' : 'Speakers (Realtek(R) Audio)';
+          const camLabel = isMac ? 'FaceTime HD Camera' : 'Integrated HD Webcam (04f2:b6d9)';
+          const fakeDevs = [
+            {{ deviceId: 'default', kind: 'audioinput', label: micLabel, groupId: 'group-default' }},
+            {{ deviceId: 'audio-in-1', kind: 'audioinput', label: micLabel, groupId: 'group-1' }},
+            {{ deviceId: 'default', kind: 'audiooutput', label: speakerLabel, groupId: 'group-default' }},
+            {{ deviceId: 'audio-out-1', kind: 'audiooutput', label: speakerLabel, groupId: 'group-1' }},
+            {{ deviceId: 'video-in-1', kind: 'videoinput', label: camLabel, groupId: 'group-cam' }}
+          ];
+          const patchedEnumerate = async function() {{
+            return fakeDevs.map(d => Object.assign(Object.create(window.MediaDeviceInfo ? window.MediaDeviceInfo.prototype : Object.prototype), d));
+          }};
+          makeNative(patchedEnumerate, 'enumerateDevices');
+          navigator.mediaDevices.enumerateDevices = patchedEnumerate;
+        }}
+      }} catch(e) {{}}
+
       // WebGL spoofing reinforcement
       try {{
         const vendor = {json.dumps(webgl_vendor)};
         const renderer = {json.dumps(webgl_renderer)};
+        const isApple = vendor.includes('Apple') || renderer.includes('Apple');
         const isMobileGPU = {json.dumps('Android' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str)};
         const getParam = WebGLRenderingContext.prototype.getParameter;
         const patchedGetParam = function(param) {{
@@ -640,7 +676,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
             chrome_m = re.search(r'(?:Chrome|CriOS)/(\d+)\.([\d.]+)', ua_str)
             chrome_major = chrome_m.group(1) if chrome_m else '150'
-            chrome_full = f"{chrome_major}.{chrome_m.group(2)}" if chrome_m else '150.0.7871.128'
+            chrome_full = f"{chrome_major}.{chrome_m.group(2)}" if chrome_m else '150.0.0.0'
 
             # Build unified UA & Client Hints payload
             ua_override_params = {
@@ -649,13 +685,13 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 "platform": cdp_platform,
                 "userAgentMetadata": {
                     "brands": [
-                        {"brand": "Google Chrome", "version": chrome_major},
                         {"brand": "Chromium", "version": chrome_major},
+                        {"brand": "Google Chrome", "version": chrome_major},
                         {"brand": "Not_A Brand", "version": "24"}
                     ],
                     "fullVersionList": [
-                        {"brand": "Google Chrome", "version": chrome_full},
                         {"brand": "Chromium", "version": chrome_full},
+                        {"brand": "Google Chrome", "version": chrome_full},
                         {"brand": "Not_A Brand", "version": "24.0.0.0"}
                     ],
                     "fullVersion": chrome_full,
@@ -766,25 +802,25 @@ def sanitize_user_agent(ua, os_hint=""):
     Ensures User-Agent uses modern Chromium/CriOS syntax matching the portable engine.
     """
     if not ua:
-        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
 
     import re
-    # Upgrade any older Chrome/CriOS versions to match the installed Chromium 150 engine
-    ua = re.sub(r'Chrome/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'Chrome/150.0.7871.128', ua)
-    ua = re.sub(r'CriOS/(?:12[0-9]|13[0-9]|14[0-9])\.[\d.]+', 'CriOS/150.0.7871.128', ua)
+    # Upgrade any older Chrome/CriOS versions to match the installed Chromium 150 engine (standard reduced UA format)
+    ua = re.sub(r'Chrome/(?:12[0-9]|13[0-9]|14[0-9]|15[0-9])\.[\d.]+', 'Chrome/150.0.0.0', ua)
+    ua = re.sub(r'CriOS/(?:12[0-9]|13[0-9]|14[0-9]|15[0-9])\.[\d.]+', 'CriOS/150.0.0.0', ua)
 
     if "Version/" in ua and "Safari/" in ua and "Chrome/" not in ua and "CriOS/" not in ua:
         if "iPhone" in ua or "iPad" in ua or "iOS" in os_hint or "iPhone" in os_hint or "iPad" in os_hint:
-            ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) CriOS/150.0.7871.128 Mobile/15E148 Safari/537.36"
+            ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) CriOS/150.0.0.0 Mobile/15E148 Safari/537.36"
         else:
-            ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+            ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
 
     return ua
 
 
-def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str, port=9222, url="https://browserleaks.com/canvas", webgl_vendor="Google Inc. (NVIDIA)", webgl_renderer="ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", cpu_cores=8, memory_gb=16, proxy_user="", proxy_pass="", timezone_id="America/New_York"):
+def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str, port=9222, url="https://browserleaks.com/canvas", webgl_vendor="Google Inc. (NVIDIA)", webgl_renderer="ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0)", cpu_cores=8, memory_gb=16, proxy_user="", proxy_pass="", timezone_id="America/New_York", custom_extensions=None, fingerprint_seed=None):
     useragent = sanitize_user_agent(useragent, name)
-    print(f"[Stealth Engine] launch_stealth_profile called for: {name} (proxy={bool(proxy_str)}, tz={timezone_id})", flush=True)
+    print(f"[Stealth Engine] launch_stealth_profile called for: {name} (proxy={bool(proxy_str)}, tz={timezone_id}, seed={fingerprint_seed})", flush=True)
 
     safe_name = "".join(c if c.isalnum() else "_" for c in name).lower()
     user_data_dir = os.path.join(PROFILES_DIR, f"{profile_id}_{safe_name}")
@@ -809,23 +845,49 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         timezone_id=timezone_id,
         width=width,
         height=height,
-        useragent=useragent
+        useragent=useragent,
+        fingerprint_seed=fingerprint_seed
     )
 
-    # Configure search engine defaults in profile database if present
+    # Configure search engine defaults in profile Preferences and database
     try:
+        default_dir = os.path.join(user_data_dir, 'Default')
+        os.makedirs(default_dir, exist_ok=True)
+        pref_path = os.path.join(default_dir, 'Preferences')
+        prefs = {}
+        if os.path.exists(pref_path):
+            try:
+                with open(pref_path, 'r', encoding='utf-8') as pf:
+                    prefs = json.load(pf)
+            except Exception:
+                prefs = {}
+        if 'default_search_provider_data' not in prefs:
+            prefs['default_search_provider_data'] = {}
+        prefs['default_search_provider_data']['template_url_data'] = {
+            "short_name": "Google",
+            "keyword": "google.com",
+            "url": "https://www.google.com/search?q={searchTerms}",
+            "suggestions_url": "https://www.google.com/complete/search?output=chrome&q={searchTerms}",
+            "favicon_url": "https://www.google.com/favicon.ico",
+            "is_active": 1,
+            "prepopulate_id": 1,
+            "encoding": "UTF-8"
+        }
+        with open(pref_path, 'w', encoding='utf-8') as pf:
+            json.dump(prefs, pf, indent=2)
+
         import sqlite3
-        web_data_path = os.path.join(user_data_dir, 'Default', 'Web Data')
+        web_data_path = os.path.join(default_dir, 'Web Data')
         if os.path.exists(web_data_path):
             conn = sqlite3.connect(web_data_path, timeout=2.0)
             c = conn.cursor()
             c.execute("""
                 UPDATE keywords 
-                SET short_name = 'DuckDuckGo',
-                    keyword = 'duckduckgo.com',
-                    url = 'https://duckduckgo.com/?q={searchTerms}',
-                    suggest_url = 'https://duckduckgo.com/ac/?q={searchTerms}&type=list',
-                    favicon_url = 'https://duckduckgo.com/favicon.ico'
+                SET short_name = 'Google',
+                    keyword = 'google.com',
+                    url = 'https://www.google.com/search?q={searchTerms}',
+                    suggest_url = 'https://www.google.com/complete/search?output=chrome&q={searchTerms}',
+                    favicon_url = 'https://www.google.com/favicon.ico'
                 WHERE prepopulate_id = 1 OR short_name = 'No Search' OR url LIKE 'http://{searchTerms}%';
             """)
             conn.commit()
@@ -838,18 +900,25 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
     if port == 9222:
         port = random.randint(9200, 9500)
 
+    custom_exts = custom_extensions or []
+    valid_custom_exts = [e.strip() for e in custom_exts if isinstance(e, str) and e.strip() and os.path.exists(e.strip())]
+    all_exts = [ext_dir] + valid_custom_exts
+    ext_list_str = ','.join(all_exts)
+
     chrome_args = [
         CHROME_EXEC,
         f'--user-data-dir={user_data_dir}',
         f'--remote-debugging-port={port}',
         f'--window-size={width},{height}',
-        f'--load-extension={ext_dir}',
-        f'--disable-extensions-except={ext_dir}',
+        f'--load-extension={ext_list_str}',
+        f'--disable-extensions-except={ext_list_str}',
         '--new-window',
         '--no-first-run',
         '--no-default-browser-check',
         '--disable-background-networking',
         '--disable-blink-features=AutomationControlled',
+        '--test-type',
+        '--disable-infobars',
         '--remote-allow-origins=*',
     ]
 
@@ -881,29 +950,15 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
     else:
         chrome_args.append('--no-proxy-server')
 
-    chrome_args.append('about:blank')
+    if url:
+        chrome_args.append(url)
 
-    print(f"[Stealth Engine] Launching Chrome executable directly: {CHROME_EXEC} (port={port})...", flush=True)
-    # Use DETACHED_PROCESS on Windows so Chrome gets its own visible GUI window
-    # instead of inheriting the console session from the batch file
+    print(f"[Stealth Engine] Spawning Chrome: {CHROME_EXEC}", flush=True)
     if sys.platform == 'win32':
-        proc = subprocess.Popen(chrome_args, creationflags=subprocess.CREATE_NEW_CONSOLE)
-        try:
-            import ctypes
-            user32 = ctypes.windll.user32
-            def enum_windows_cb(hwnd, _):
-                if user32.IsWindowVisible(hwnd):
-                    pid_out = ctypes.c_ulong()
-                    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_out))
-                    if pid_out.value == proc.pid:
-                        user32.ShowWindow(hwnd, 9)
-                        user32.SetForegroundWindow(hwnd)
-                        return False
-                return True
-            cb_func = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)(enum_windows_cb)
-            user32.EnumWindows(cb_func, 0)
-        except Exception:
-            pass
+        proc = subprocess.Popen(
+            chrome_args,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+        )
     else:
         proc = subprocess.Popen(chrome_args)
 
@@ -916,12 +971,12 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
             running_loop = None
 
         if running_loop and running_loop.is_running():
-            asyncio.create_task(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id))
+            asyncio.create_task(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id, fingerprint_seed=fingerprint_seed))
         else:
             new_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(new_loop)
             try:
-                new_loop.run_until_complete(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id))
+                new_loop.run_until_complete(apply_cdp_stealth(port, url, useragent, width, height, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, proxy_user, proxy_pass, profile_id, timezone_id, fingerprint_seed=fingerprint_seed))
             finally:
                 new_loop.close()
     except Exception as e:

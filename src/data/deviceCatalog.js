@@ -63,7 +63,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "dell_xps_13_plus",
@@ -76,7 +76,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "dell_xps_17_9730",
@@ -89,7 +89,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "dell_latitude_5440",
@@ -102,7 +102,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "thinkpad_x1_carbon_g12",
@@ -115,7 +115,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "thinkpad_t14s_gen5",
@@ -128,7 +128,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (AMD)",
     "webGlRenderer": "ANGLE (AMD, AMD Radeon 780M Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "lenovo_yoga_9i",
@@ -141,7 +141,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "lenovo_ideapad_pro_5",
@@ -154,7 +154,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "hp_spectre_x360_16",
@@ -167,7 +167,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "hp_envy_16_creator",
@@ -180,7 +180,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "hp_elitebook_840_g10",
@@ -193,7 +193,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "asus_zenbook_14_oled",
@@ -206,7 +206,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "asus_zenbook_pro_16x",
@@ -219,7 +219,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "surface_laptop_6",
@@ -232,7 +232,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "surface_pro_10",
@@ -245,7 +245,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "acer_swift_go_14",
@@ -258,7 +258,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "lg_gram_17_pro",
@@ -271,7 +271,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3050 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "samsung_galaxy_book4_pro",
@@ -284,7 +284,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) Arc(TM) Graphics Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
 
   // ========================================================
@@ -301,7 +301,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "alienware_m18_r2",
@@ -314,7 +314,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "asus_rog_scar_18",
@@ -327,7 +327,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "asus_rog_zephyrus_g16",
@@ -340,7 +340,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "asus_tuf_gaming_a15",
@@ -353,7 +353,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "razer_blade_16_studio",
@@ -366,7 +366,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "razer_blade_14",
@@ -379,7 +379,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "lenovo_legion_pro_7i",
@@ -392,7 +392,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "hp_omen_16_gaming",
@@ -405,7 +405,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "msi_titan_18_hx",
@@ -418,7 +418,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 128,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "msi_raider_ge78_hx",
@@ -431,7 +431,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "acer_predator_helios_18",
@@ -444,7 +444,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
 
   // ========================================================
@@ -461,7 +461,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "custom_amd_7950x3d_rtx4080",
@@ -474,7 +474,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 SUPER Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "custom_amd_7800x3d_rtx4070ti",
@@ -487,7 +487,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "custom_intel_i7_rtx4070s",
@@ -500,7 +500,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 SUPER Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "custom_amd_all_team_red",
@@ -513,7 +513,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (AMD)",
     "webGlRenderer": "ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "dell_precision_7875_tower",
@@ -526,7 +526,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 128,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "dell_optiplex_7020_tower",
@@ -539,7 +539,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Google Inc. (Intel)",
     "webGlRenderer": "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "hp_z6_g5_workstation",
@@ -552,7 +552,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "lenovo_thinkstation_p8",
@@ -565,7 +565,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "puget_peak_workstation",
@@ -578,7 +578,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 128,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
 
   // ========================================================
@@ -595,7 +595,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Apple Inc.",
     "webGlRenderer": "Apple M3 Max",
-    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "macbook_pro_14_m3_pro",
@@ -608,7 +608,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 36,
     "webGlVendor": "Apple Inc.",
     "webGlRenderer": "Apple M3 Pro",
-    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "macbook_air_15_m3",
@@ -621,7 +621,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Apple Inc.",
     "webGlRenderer": "Apple M3",
-    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "macbook_air_13_m3",
@@ -634,7 +634,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 16,
     "webGlVendor": "Apple Inc.",
     "webGlRenderer": "Apple M3",
-    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "mac_studio_m2_ultra",
@@ -647,7 +647,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 128,
     "webGlVendor": "Apple Inc.",
     "webGlRenderer": "Apple M2 Ultra",
-    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "mac_mini_m2_pro",
@@ -660,7 +660,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Apple Inc.",
     "webGlRenderer": "Apple M2 Pro",
-    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
 
   // ========================================================
@@ -677,7 +677,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "thinkpad_p16_fedora",
@@ -690,7 +690,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "dell_precision_7680_ubuntu",
@@ -703,7 +703,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 64,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   },
   {
     "id": "tuxedo_infinitybook_pro",
@@ -716,7 +716,7 @@ var DEVICE_PRESETS = [
     "memoryGb": 32,
     "webGlVendor": "Google Inc. (NVIDIA)",
     "webGlRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0)",
-    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.128 Safari/537.36"
+    "useragent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
   }
 ];
 

@@ -1,2 +1,30 @@
 [
- ]
+  {
+    "id": "px-1788463868042-b95o",
+    "type": "HTTP",
+    "ip": "188.209.133.27",
+    "port": "47736",
+    "username": "E4VHZAUT",
+    "password": "111P60NB",
+    "location": "🇮🇳 Mumbai, India",
+    "countryCode": "IN",
+    "country": "India",
+    "city": "Mumbai",
+    "timezone": "Asia/Kolkata",
+    "latency": 68
+  },
+  {
+    "id": "px-1788463868042-xt2z",
+    "type": "HTTP",
+    "ip": "188.209.133.30",
+    "port": "45536",
+    "username": "E4VHZAUT",
+    "password": "111P60NB",
+    "location": "🇮🇳 Mumbai, India",
+    "countryCode": "IN",
+    "country": "India",
+    "city": "Mumbai",
+    "timezone": "Asia/Kolkata",
+    "latency": 70
+  }
+]

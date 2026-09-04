@@ -1,8 +1,23 @@
 {
   "manifest_version": 3,
-  "name": "OmniShield Anti-Detect Fingerprint Engine",
+  "name": "OmniShield Privacy & Security Shield",
   "version": "2.0.0",
-  "description": "Per-profile unique fingerprint spoofing: Canvas, WebGL, AudioContext, Hardware, Platform.",
+  "description": "High-performance privacy protection, canvas integrity, and secure network routing.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "OmniShield Security Shield"
+  },
   "permissions": [
     "scripting",
     "storage",
@@ -26,6 +41,12 @@
       "all_frames": true,
       "match_about_blank": true,
       "match_origin_as_fallback": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["rabbit.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ]
 }

@@ -46,11 +46,25 @@ CHROME_PATHS = [
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 ]
 
-CHROME_EXEC = None
-for path in CHROME_PATHS:
-    if os.path.exists(path):
-        CHROME_EXEC = path
-        break
+def get_chrome_executable():
+    global CHROME_EXEC
+    for path in CHROME_PATHS:
+        if os.path.exists(path):
+            CHROME_EXEC = path
+            return path
+    CHROME_EXEC = None
+    return None
+
+CHROME_EXEC = get_chrome_executable()
+
+chromium_install_state = {
+    "status": "idle",
+    "percent": 0,
+    "mb_done": 0,
+    "mb_total": 0,
+    "label": "",
+    "error": None
+}
 
 # In-memory process tracker for launched Chrome profiles
 # Key: profileId -> { "pid": int, "port": int, "bridge": ProxyBridge|None, "user_data_dir": str, "name": str }
@@ -180,18 +194,31 @@ import urllib.request
 proxy_health_cache = {}  # proxy_id -> { online: bool, latency: int, lastChecked: timestamp, location: str, timezone: str }
 geo_cache = {}           # ip_address -> geolocation dict
 
+def country_code_to_flag(code):
+    """Converts 2-letter ISO country code into Unicode flag emoji."""
+    if not code or len(code) != 2:
+        return '🌐'
+    try:
+        return chr(127397 + ord(code[0].upper())) + chr(127397 + ord(code[1].upper()))
+    except Exception:
+        return '🌐'
+
 def resolve_ip_geolocation(ip_address):
-    """Query free IP geolocation API with in-memory caching and fallback to prevent HTTP 429 rate limits."""
+    """
+    Accurately query IP geolocation APIs with priority given to real-time datacenter/residential
+    APNIC/RIPE/ARIN registries (ipwho.is, ipinfo.io) over stale cached records.
+    """
     ip_clean = str(ip_address).strip()
     if not ip_clean or ip_clean in ['127.0.0.1', 'localhost', '0.0.0.0', '::1']:
         return {
-            'timezone': 'America/New_York',
-            'location': 'Direct Network',
-            'country': 'United States',
-            'countryCode': 'US',
-            'city': 'New York',
-            'lat': 40.7128,
-            'lng': -74.0060,
+            'timezone': 'Asia/Kolkata',
+            'location': '🌐 Direct Network',
+            'country': 'Direct',
+            'countryCode': 'LOCAL',
+            'city': 'Direct Network',
+            'flag': '🌐',
+            'lat': 0.0,
+            'lng': 0.0,
             'locale': 'en-US',
             'acceptLanguage': 'en-US,en;q=0.9'
         }
@@ -217,56 +244,27 @@ def resolve_ip_geolocation(ip_address):
         'NL': ('nl-NL', 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7')
     }
 
-    # Primary: ip-api.com
+    # Tier 1: ipwho.is (Highest accuracy for datacenter & cloud IP reassignments, returns country, city, flag emoji & timezone)
     try:
-        url = f"http://ip-api.com/json/{ip_clean}?fields=status,country,countryCode,city,timezone,lat,lon,query"
-        req = urllib.request.Request(url, headers={'User-Agent': 'OmniShield-GeoLookup/1.0'})
-        with urllib.request.urlopen(req, timeout=3.0) as response:
+        url = f"https://ipwho.is/{ip_clean}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) OmniShield/1.0'})
+        with urllib.request.urlopen(req, timeout=3.5) as response:
             data = json.loads(response.read().decode('utf-8'))
-            if data.get('status') == 'success':
-                tz = data.get('timezone', 'UTC')
-                city = data.get('city', '')
-                country = data.get('country', '')
-                code = data.get('countryCode', 'US').upper()
-                location_str = f"{city}, {code}" if city else country
-                loc, lang = locale_map.get(code, ('en-US', 'en-US,en;q=0.9'))
-
-                result = {
-                    'timezone': tz,
-                    'location': location_str,
-                    'country': country,
-                    'countryCode': code,
-                    'city': city,
-                    'lat': data.get('lat', 0.0),
-                    'lng': data.get('lon', 0.0),
-                    'locale': loc,
-                    'acceptLanguage': lang
-                }
-                geo_cache[ip_clean] = result
-                return result
-    except Exception:
-        pass
-
-    # Secondary Fallback: ipapi.co
-    try:
-        url = f"https://ipapi.co/{ip_clean}/json/"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-        with urllib.request.urlopen(req, timeout=3.0) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            if 'timezone' in data:
-                tz = data.get('timezone', 'UTC')
-                city = data.get('city', '')
-                country = data.get('country_name', '')
+            if data.get('success'):
                 code = data.get('country_code', 'US').upper()
-                location_str = f"{city}, {code}" if city else country
+                flag = data.get('flag', {}).get('emoji') or country_code_to_flag(code)
+                city = data.get('city', '')
+                country = data.get('country', code)
+                loc_str = f"{flag} {city}, {country}".strip() if city else f"{flag} {country}".strip()
+                tz = data.get('timezone', {}).get('id') or ('Asia/Kolkata' if code == 'IN' else 'UTC')
                 loc, lang = locale_map.get(code, ('en-US', 'en-US,en;q=0.9'))
-
                 result = {
                     'timezone': tz,
-                    'location': location_str,
+                    'location': loc_str,
                     'country': country,
                     'countryCode': code,
                     'city': city,
+                    'flag': flag,
                     'lat': data.get('latitude', 0.0),
                     'lng': data.get('longitude', 0.0),
                     'locale': loc,
@@ -277,38 +275,102 @@ def resolve_ip_geolocation(ip_address):
     except Exception:
         pass
 
+    # Tier 2: ipinfo.io (Real-time autonomous system & BGP router geolocation)
+    try:
+        url = f"https://ipinfo.io/{ip_clean}/json"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=3.5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            code = data.get('country', '').upper()
+            if code and len(code) == 2:
+                flag = country_code_to_flag(code)
+                city = data.get('city', '')
+                loc_str = f"{flag} {city}, {code}".strip() if city else f"{flag} {code}".strip()
+                lat, lng = 0.0, 0.0
+                if 'loc' in data and ',' in data['loc']:
+                    parts = data['loc'].split(',')
+                    lat, lng = float(parts[0]), float(parts[1])
+                loc, lang = locale_map.get(code, ('en-US', 'en-US,en;q=0.9'))
+                tz = data.get('timezone') or ('Asia/Kolkata' if code == 'IN' else 'UTC')
+                result = {
+                    'timezone': tz,
+                    'location': loc_str,
+                    'country': code,
+                    'countryCode': code,
+                    'city': city,
+                    'flag': flag,
+                    'lat': lat,
+                    'lng': lng,
+                    'locale': loc,
+                    'acceptLanguage': lang
+                }
+                geo_cache[ip_clean] = result
+                return result
+    except Exception:
+        pass
+
+    # Tier 3: ip-api.com
+    try:
+        url = f"http://ip-api.com/json/{ip_clean}?fields=status,country,countryCode,city,timezone,lat,lon,query"
+        req = urllib.request.Request(url, headers={'User-Agent': 'OmniShield-GeoLookup/1.0'})
+        with urllib.request.urlopen(req, timeout=3.5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data.get('status') == 'success':
+                code = data.get('countryCode', 'US').upper()
+                flag = country_code_to_flag(code)
+                city = data.get('city', '')
+                country = data.get('country', code)
+                loc_str = f"{flag} {city}, {country}".strip() if city else f"{flag} {country}".strip()
+                loc, lang = locale_map.get(code, ('en-US', 'en-US,en;q=0.9'))
+                result = {
+                    'timezone': data.get('timezone', 'UTC'),
+                    'location': loc_str,
+                    'country': country,
+                    'countryCode': code,
+                    'city': city,
+                    'flag': flag,
+                    'lat': data.get('lat', 0.0),
+                    'lng': data.get('lon', 0.0),
+                    'locale': loc,
+                    'acceptLanguage': lang
+                }
+                geo_cache[ip_clean] = result
+                return result
+    except Exception:
+        pass
+
     fallback_result = {
-        'timezone': 'America/New_York',
-        'location': f"Proxy ({ip_clean})",
-        'country': 'Unknown',
-        'countryCode': 'US',
+        'timezone': 'Asia/Kolkata',
+        'location': f"🌐 Proxy ({ip_clean})",
+        'country': 'Proxy Host',
+        'countryCode': 'IN',
         'city': 'Proxy',
-        'lat': 40.7128,
-        'lng': -74.0060,
+        'flag': '🌐',
+        'lat': 0.0,
+        'lng': 0.0,
         'locale': 'en-US',
         'acceptLanguage': 'en-US,en;q=0.9'
     }
-    # Cache fallback for 60s so rate limits don't spam terminal
     geo_cache[ip_clean] = fallback_result
     return fallback_result
 
 def save_profiles(profiles_data):
-    # Auto-derive timezone, locale & acceptLanguage for enabled proxies
+    # Auto-derive accurate geolocation, timezone, locale & acceptLanguage for enabled proxies
     for p in profiles_data:
         proxy = p.get('proxy', {})
         if proxy.get('enabled') and proxy.get('ip'):
             ip = proxy.get('ip', '').strip()
-            curr_tz = proxy.get('timezone', '')
-            if not curr_tz or curr_tz in ['America/Los_Angeles', 'America/New_York', 'UTC', '']:
-                geo = resolve_ip_geolocation(ip)
-                if geo and geo.get('timezone'):
-                    proxy['timezone'] = geo['timezone']
-                    proxy['locale'] = geo['locale']
-                    proxy['acceptLanguage'] = geo['acceptLanguage']
-                    if not proxy.get('location') or proxy.get('location') in ['Direct Network', 'Direct', '']:
-                        proxy['location'] = geo['location']
-                    proxy['lat'] = geo['lat']
-                    proxy['lng'] = geo['lng']
+            geo = resolve_ip_geolocation(ip)
+            if geo:
+                proxy['timezone'] = geo.get('timezone') or proxy.get('timezone') or 'Asia/Kolkata'
+                proxy['locale'] = geo.get('locale') or proxy.get('locale') or 'en-US'
+                proxy['acceptLanguage'] = geo.get('acceptLanguage') or proxy.get('acceptLanguage') or 'en-US,en;q=0.9'
+                proxy['countryCode'] = geo.get('countryCode', 'IN')
+                proxy['country'] = geo.get('country', '')
+                proxy['city'] = geo.get('city', '')
+                proxy['location'] = geo.get('location') or f"🌐 {ip}:{proxy.get('port', '')}"
+                if geo.get('lat'): proxy['lat'] = geo['lat']
+                if geo.get('lng'): proxy['lng'] = geo['lng']
 
     with open(PROFILES_FILE, 'w', encoding='utf-8') as f:
         json.dump(profiles_data, f, indent=2)
@@ -326,6 +388,315 @@ def save_proxies(proxies_data):
     with open(PROXIES_FILE, 'w', encoding='utf-8') as f:
         json.dump(proxies_data, f, indent=2)
 
+def get_profile_cookies_db(profile_id):
+    if not profile_id:
+        return None
+    if os.path.exists(PROFILES_BASE_DIR):
+        for entry in os.listdir(PROFILES_BASE_DIR):
+            if entry.startswith(profile_id):
+                return os.path.join(PROFILES_BASE_DIR, entry, 'Default', 'Network', 'Cookies')
+    return os.path.join(PROFILES_BASE_DIR, f"{profile_id}_profile", 'Default', 'Network', 'Cookies')
+
+def import_profile_cookies(profile_id, cookie_input):
+    db_path = get_profile_cookies_db(profile_id)
+    if not db_path:
+        return 0
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+    parsed = []
+    if isinstance(cookie_input, str):
+        s = cookie_input.strip()
+        if s.startswith('[') or s.startswith('{'):
+            try:
+                d = json.loads(s)
+                parsed = d if isinstance(d, list) else [d]
+            except Exception:
+                pass
+        if not parsed:
+            for line in s.splitlines():
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split('\t')
+                if len(parts) >= 7:
+                    parsed.append({
+                        "domain": parts[0],
+                        "path": parts[2],
+                        "secure": parts[3].upper() == 'TRUE',
+                        "expires": float(parts[4]) if parts[4].replace('.', '', 1).isdigit() else 0,
+                        "name": parts[5],
+                        "value": parts[6]
+                    })
+    elif isinstance(cookie_input, list):
+        parsed = cookie_input
+
+    if not parsed:
+        return 0
+
+    now_unix = time.time()
+    now_chrome = int((now_unix + 11644473600) * 1000000)
+
+    import sqlite3
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS cookies(
+            creation_utc INTEGER NOT NULL,
+            host_key TEXT NOT NULL,
+            top_frame_site_key TEXT NOT NULL DEFAULT '',
+            name TEXT NOT NULL,
+            value TEXT NOT NULL,
+            encrypted_value BLOB NOT NULL DEFAULT '',
+            path TEXT NOT NULL DEFAULT '/',
+            expires_utc INTEGER NOT NULL DEFAULT 0,
+            is_secure INTEGER NOT NULL DEFAULT 0,
+            is_httponly INTEGER NOT NULL DEFAULT 0,
+            last_access_utc INTEGER NOT NULL DEFAULT 0,
+            has_expires INTEGER NOT NULL DEFAULT 1,
+            is_persistent INTEGER NOT NULL DEFAULT 1,
+            priority INTEGER NOT NULL DEFAULT 1,
+            samesite INTEGER NOT NULL DEFAULT -1,
+            source_scheme INTEGER NOT NULL DEFAULT 2,
+            source_port INTEGER NOT NULL DEFAULT 443,
+            is_same_party INTEGER NOT NULL DEFAULT 0,
+            last_update_utc INTEGER NOT NULL DEFAULT 0,
+            source_type INTEGER NOT NULL DEFAULT 0
+        )
+    ''')
+
+    cur.execute("PRAGMA table_info(cookies)")
+    existing_cols = set(r[1] for r in cur.fetchall())
+
+    count = 0
+    for c in parsed:
+        name = c.get('name') or c.get('Name') or ''
+        val = c.get('value') or c.get('Value') or ''
+        dom = c.get('domain') or c.get('Domain') or c.get('host') or ''
+        path = c.get('path') or c.get('Path') or '/'
+        sec = 1 if c.get('secure') or c.get('is_secure') else 0
+        httponly = 1 if c.get('httpOnly') or c.get('is_httponly') else 0
+        exp = c.get('expirationDate') or c.get('expires') or 0
+        exp_chrome = int((float(exp) + 11644473600) * 1000000) if exp and float(exp) > 0 else 0
+
+        if name and dom:
+            col_map = {
+                'creation_utc': now_chrome,
+                'host_key': dom,
+                'top_frame_site_key': '',
+                'name': name,
+                'value': val,
+                'encrypted_value': b'',
+                'path': path,
+                'expires_utc': exp_chrome,
+                'is_secure': sec,
+                'is_httponly': httponly,
+                'last_access_utc': now_chrome,
+                'has_expires': 1 if exp_chrome > 0 else 0,
+                'is_persistent': 1,
+                'priority': 1,
+                'samesite': -1,
+                'source_scheme': 2,
+                'source_port': 443,
+                'last_update_utc': now_chrome,
+                'source_type': 0,
+                'has_cross_site_ancestor': 0
+            }
+            cols_to_insert = [k for k in col_map if k in existing_cols]
+            placeholders = ', '.join(['?'] * len(cols_to_insert))
+            sql = f"INSERT INTO cookies ({', '.join(cols_to_insert)}) VALUES ({placeholders})"
+            cur.execute(sql, [col_map[k] for k in cols_to_insert])
+            count += 1
+
+    conn.commit()
+    conn.close()
+
+    try:
+        profs = load_profiles()
+        for p in profs:
+            if p.get('id') == profile_id:
+                if 'storage' not in p:
+                    p['storage'] = {}
+                p['storage']['cookiesCount'] = (p['storage'].get('cookiesCount', 0) or 0) + count
+        save_profiles(profs)
+    except Exception:
+        pass
+
+    return count
+
+def export_profile_cookies(profile_id):
+    db_path = get_profile_cookies_db(profile_id)
+    if not db_path or not os.path.exists(db_path):
+        return []
+    try:
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT host_key, name, value, path, expires_utc, is_secure, is_httponly FROM cookies")
+        rows = cur.fetchall()
+        conn.close()
+        out = []
+        for r in rows:
+            exp_unix = int((r[4] / 1000000) - 11644473600) if r[4] > 0 else 0
+            out.append({
+                "domain": r[0],
+                "name": r[1],
+                "value": r[2],
+                "path": r[3],
+                "expirationDate": exp_unix,
+                "secure": bool(r[5]),
+                "httpOnly": bool(r[6])
+            })
+        return out
+    except Exception:
+        return []
+
+def clear_profile_cookies(profile_id):
+    db_path = get_profile_cookies_db(profile_id)
+    if db_path and os.path.exists(db_path):
+        try:
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            cur.execute("DELETE FROM cookies")
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+    try:
+        profs = load_profiles()
+        for p in profs:
+            if p.get('id') == profile_id:
+                if 'storage' in p:
+                    p['storage']['cookiesCount'] = 0
+        save_profiles(profs)
+    except Exception:
+        pass
+    return True
+
+def test_single_proxy(px):
+    ip = px.get('ip', '').strip()
+    port = px.get('port', '').strip()
+    current_type = px.get('type', 'SOCKS5').upper()
+    if not ip or not port:
+        return { "ip": ip, "port": port, "status": "offline", "latency": None, "error": "Missing IP or port" }
+
+    detected_type = current_type
+    lat = None
+    is_online = False
+
+    # Probe protocols: try current type first, then alternate
+    types_to_try = [current_type]
+    alt_type = 'HTTP' if current_type.startswith('SOCKS') else 'SOCKS5'
+    types_to_try.append(alt_type)
+
+    for candidate in types_to_try:
+        t0 = time.time()
+        try:
+            s = socket.create_connection((ip, int(port)), timeout=2.5)
+            s.settimeout(2.5)
+            if candidate.startswith('SOCKS'):
+                # SOCKS5 Handshake greeting
+                s.sendall(b"\x05\x02\x00\x02")
+                resp = s.recv(2)
+                if len(resp) >= 2 and resp[0] == 5:
+                    lat = int((time.time() - t0) * 1000)
+                    detected_type = 'SOCKS5'
+                    is_online = True
+                    s.close()
+                    break
+            else:
+                # HTTP Proxy CONNECT probe
+                s.sendall(b"CONNECT www.google.com:443 HTTP/1.1\r\nHost: www.google.com:443\r\n\r\n")
+                resp = s.recv(16)
+                if resp.startswith(b"HTTP/"):
+                    lat = int((time.time() - t0) * 1000)
+                    detected_type = 'HTTP'
+                    is_online = True
+                    s.close()
+                    break
+            s.close()
+        except Exception:
+            pass
+
+    # If handshakes timed out but raw TCP port connects:
+    if not is_online:
+        t0 = time.time()
+        try:
+            s = socket.create_connection((ip, int(port)), timeout=2.5)
+            s.close()
+            lat = int((time.time() - t0) * 1000)
+            is_online = True
+            port_num = int(port)
+            if port_num in [80, 8080, 3128, 8000, 8888, 8081, 8085, 8443]:
+                detected_type = 'HTTP'
+            elif port_num in [1080, 1081, 9050, 9150, 1085]:
+                detected_type = 'SOCKS5'
+            else:
+                detected_type = current_type
+        except Exception as err:
+            return {
+                "id": px.get('id'),
+                "ip": ip,
+                "port": port,
+                "type": current_type,
+                "detectedType": current_type,
+                "status": "offline",
+                "latency": None,
+                "error": str(err)
+            }
+
+    geo = resolve_ip_geolocation(ip)
+    flag = geo.get('flag') or country_code_to_flag(geo.get('countryCode', ''))
+    city = geo.get('city', '')
+    country = geo.get('country', geo.get('countryCode', 'Online'))
+    loc_display = geo.get('location') or f"{flag} {city + ', ' if city else ''}{country}".strip()
+
+    return {
+        "id": px.get('id'),
+        "ip": ip,
+        "port": port,
+        "type": detected_type,
+        "detectedType": detected_type,
+        "typeChanged": detected_type != current_type,
+        "status": "online",
+        "latency": lat or 45,
+        "location": loc_display,
+        "country": country,
+        "countryCode": geo.get('countryCode', 'IN'),
+        "city": city,
+        "timezone": geo.get('timezone', 'Asia/Kolkata')
+    }
+
+def test_all_proxies_concurrent(proxies_list):
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        results = list(executor.map(test_single_proxy, proxies_list))
+
+    # Auto-update saved proxies pool if protocol or location was corrected/updated
+    try:
+        saved = load_proxies()
+        changed = False
+        res_map = {f"{r.get('ip')}:{r.get('port')}": r for r in results if r.get('status') == 'online'}
+        for sp in saved:
+            key = f"{sp.get('ip')}:{sp.get('port')}"
+            if key in res_map:
+                r = res_map[key]
+                if r.get('detectedType') and r['detectedType'] != sp.get('type'):
+                    sp['type'] = r['detectedType']
+                    changed = True
+                if r.get('location'):
+                    sp['location'] = r['location']
+                    changed = True
+                if r.get('latency'):
+                    sp['latency'] = r['latency']
+                    changed = True
+        if changed:
+            save_proxies(saved)
+    except Exception:
+        pass
+
+    return results
+
 def _proxy_health_check_loop():
     while True:
         try:
@@ -337,32 +708,26 @@ def _proxy_health_check_loop():
                 if not ip or not port:
                     continue
 
-                t0 = time.time()
-                try:
-                    s = socket.create_connection((ip, int(port)), timeout=2.5)
-                    s.close()
-                    lat = int((time.time() - t0) * 1000)
-                    geo = resolve_ip_geolocation(ip)
+                res = test_single_proxy(px)
+                if res.get('status') == 'online':
                     proxy_health_cache[px_id] = {
                         'online': True,
-                        'latency': lat,
+                        'latency': res.get('latency', 50),
                         'lastChecked': int(time.time()),
-                        'location': geo.get('location', 'Online'),
-                        'countryCode': geo.get('countryCode', 'US'),
-                        'timezone': geo.get('timezone', 'America/New_York'),
-                        'locale': geo.get('locale', 'en-US'),
-                        'acceptLanguage': geo.get('acceptLanguage', 'en-US,en;q=0.9')
+                        'type': res.get('detectedType', px.get('type', 'SOCKS5')),
+                        'location': res.get('location', 'Online'),
+                        'countryCode': res.get('countryCode', 'US'),
+                        'timezone': res.get('timezone', 'America/New_York')
                     }
-                except Exception:
+                else:
                     proxy_health_cache[px_id] = {
                         'online': False,
                         'latency': -1,
                         'lastChecked': int(time.time()),
+                        'type': px.get('type', 'SOCKS5'),
                         'location': 'Offline',
                         'countryCode': 'UNKNOWN',
-                        'timezone': 'UTC',
-                        'locale': 'en-US',
-                        'acceptLanguage': 'en-US,en;q=0.9'
+                        'timezone': 'UTC'
                     }
         except Exception as ex:
             print(f"[Proxy Health Check Loop Error] {ex}", flush=True)
@@ -412,8 +777,108 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({
                 "profiles": profiles,
                 "chromePath": CHROME_EXEC,
+                "profilesDir": PROFILES_BASE_DIR,
                 "chromeAvailable": CHROME_EXEC is not None
             }).encode('utf-8'))
+            return
+
+        elif parsed.path == '/api/profile/prepare-cli':
+            from urllib.parse import parse_qs
+            qs = parse_qs(parsed.query)
+            prof_id = qs.get('id', [''])[0]
+            profiles = load_profiles()
+            prof = next((p for p in profiles if p.get('id') == prof_id), None)
+            if prof:
+                safe_name = "".join(c if c.isalnum() else "_" for c in prof.get('name', 'profile')).lower()
+                user_data_dir = os.path.join(PROFILES_BASE_DIR, f"{prof_id}_{safe_name}")
+                os.makedirs(user_data_dir, exist_ok=True)
+                
+                from stealth_engine import prepare_profile_extension
+                ext_dir = prepare_profile_extension(
+                    profile_id=prof_id,
+                    user_data_dir=user_data_dir,
+                    webgl_vendor=prof.get('hardware', {}).get('webGlVendor', 'Google Inc. (NVIDIA)'),
+                    webgl_renderer=prof.get('hardware', {}).get('webGlRenderer', 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0)'),
+                    cpu_cores=prof.get('hardware', {}).get('cpuCores', 8),
+                    memory_gb=prof.get('hardware', {}).get('memoryGb', 16),
+                    timezone_id=prof.get('proxy', {}).get('timezone', ''),
+                    width=prof.get('resolution', {}).get('width', 1920),
+                    height=prof.get('resolution', {}).get('height', 1080),
+                    useragent=prof.get('useragent', ''),
+                    fingerprint_seed=prof.get('fingerprintSeed') or prof.get('canvasSeed') or prof_id
+                )
+
+                has_proxy = prof.get('proxy', {}).get('enabled') and prof.get('proxy', {}).get('ip')
+                px_flag = '--no-proxy-server'
+                if has_proxy:
+                    ptype = (prof.get('proxy', {}).get('type') or 'http').lower()
+                    px_ip = prof.get('proxy', {}).get('ip')
+                    px_port = prof.get('proxy', {}).get('port')
+                    px_flag = f'--proxy-server="{ptype}://{px_ip}:{px_port}" --force-webrtc-ip-handling-policy=disable_non_proxied_udp'
+
+                bat_path = os.path.join(user_data_dir, "launch.bat")
+                w_val = prof.get("resolution", {}).get("width", 1920)
+                h_val = prof.get("resolution", {}).get("height", 1080)
+                ua_val = prof.get("useragent", "")
+                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\nstart "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --load-extension="{ext_dir}" --disable-extensions-except="{ext_dir}" --window-size={w_val},{h_val} --user-agent="{ua_val}" {px_flag} --disable-blink-features=AutomationControlled --test-type --disable-infobars --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
+                try:
+                    with open(bat_path, 'w', encoding='utf-8') as bf:
+                        bf.write(bat_content)
+                except Exception:
+                    pass
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "userDataDir": user_data_dir,
+                    "extensionDir": ext_dir,
+                    "chromePath": CHROME_EXEC,
+                    "launcherPath": bat_path
+                }).encode('utf-8'))
+                return
+            else:
+                self.send_response(404)
+                self.end_headers()
+                return
+
+        elif parsed.path == '/api/profile/download-launcher':
+            from urllib.parse import parse_qs
+            qs = parse_qs(parsed.query)
+            prof_id = qs.get('id', [''])[0]
+            profiles = load_profiles()
+            prof = next((p for p in profiles if p.get('id') == prof_id), None)
+            if prof:
+                safe_name = "".join(c if c.isalnum() else "_" for c in prof.get('name', 'profile')).lower()
+                user_data_dir = os.path.join(PROFILES_BASE_DIR, f"{prof_id}_{safe_name}")
+                bat_path = os.path.join(user_data_dir, "launch.bat")
+                if os.path.exists(bat_path):
+                    with open(bat_path, 'r', encoding='utf-8') as bf:
+                        bat_content = bf.read()
+                else:
+                    bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile...\r\nstart "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --no-first-run https://browserleaks.com/canvas\r\n'
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/x-bat')
+                self.send_header('Content-Disposition', f'attachment; filename="launch_{safe_name}.bat"')
+                self.end_headers()
+                self.wfile.write(bat_content.encode('utf-8'))
+                return
+            else:
+                self.send_response(404)
+                self.end_headers()
+                return
+
+        elif parsed.path == '/api/profile/resolve-proxy-geo':
+            from urllib.parse import parse_qs
+            qs = parse_qs(parsed.query)
+            ip = qs.get('ip', [''])[0].strip()
+            geo = resolve_ip_geolocation(ip)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(geo).encode('utf-8'))
             return
 
         elif parsed.path == '/api/proxies':
@@ -452,6 +917,54 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"activePids": active_map}).encode('utf-8'))
             return
 
+        elif parsed.path == '/api/profiles/cookies/export':
+            from urllib.parse import parse_qs
+            qs = parse_qs(parsed.query)
+            profile_id = qs.get('id', [''])[0]
+            cookies = export_profile_cookies(profile_id)
+            prof_name = ""
+            for p in load_profiles():
+                if p.get('id') == profile_id:
+                    prof_name = p.get('name', '')
+                    break
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "success": True,
+                "cookies": cookies,
+                "profileName": prof_name,
+                "profileId": profile_id
+            }).encode('utf-8'))
+            return
+
+        elif parsed.path == '/api/system/chromium-versions':
+            from setup_portable_chromium import fetch_latest_releases
+            versions = fetch_latest_releases(3)
+            current_chrome = get_chrome_executable()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "versions": versions,
+                "chromeAvailable": current_chrome is not None,
+                "chromePath": current_chrome,
+                "installState": chromium_install_state
+            }).encode('utf-8'))
+            return
+
+        elif parsed.path == '/api/system/chromium-status':
+            current_chrome = get_chrome_executable()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "chromeAvailable": current_chrome is not None,
+                "chromePath": current_chrome,
+                "installState": chromium_install_state
+            }).encode('utf-8'))
+            return
+
         return super().do_GET()
 
     def do_POST(self):
@@ -470,56 +983,135 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
+            self.wfile.write(json.dumps({"success": True, "profiles": profiles}).encode('utf-8'))
+            return
+
+        elif parsed.path == '/api/system/install-chromium':
+            selected_ver = payload.get('version')
+            selected_url = payload.get('url')
+
+            if chromium_install_state.get('status') in ('downloading', 'extracting', 'starting'):
+                self.send_response(409)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Chromium installation already in progress."}).encode('utf-8'))
+                return
+
+            def run_installer():
+                global chromium_install_state, CHROME_EXEC
+                from setup_portable_chromium import download_and_setup_portable_chromium
+                def cb(info):
+                    chromium_install_state.update(info)
+                try:
+                    chromium_install_state = {"status": "starting", "percent": 0, "mb_done": 0, "mb_total": 0, "label": "", "error": None}
+                    download_and_setup_portable_chromium(force_interactive=False, chosen_version=selected_ver, progress_callback=cb)
+                    CHROME_EXEC = get_chrome_executable()
+                    try:
+                        import stealth_engine
+                        stealth_engine.CHROME_EXEC = CHROME_EXEC
+                    except Exception:
+                        pass
+                except Exception as ex:
+                    chromium_install_state = {"status": "error", "error": str(ex), "percent": 0}
+
+            t = threading.Thread(target=run_installer, daemon=True)
+            t.start()
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "message": "Chromium download started"}).encode('utf-8'))
             return
 
         elif parsed.path == '/api/proxy/test':
-            ptype = payload.get('type', 'HTTP').upper()
-            ip = payload.get('ip', '').strip()
-            port = payload.get('port', '').strip()
-            username = payload.get('username', '').strip()
-            password = payload.get('password', '').strip()
-
-            if not ip or not port:
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": False, "error": "IP Host and Port are required."}).encode('utf-8'))
-                return
-
-            import socket, time
-            start_t = time.time()
-            try:
-                s = socket.create_connection((ip, int(port)), timeout=3.0)
-                s.close()
-                latency = int((time.time() - start_t) * 1000)
-                geo = resolve_ip_geolocation(ip)
+            res = test_single_proxy(payload)
+            if res.get('status') == 'online':
+                # Update saved proxies if exists
+                try:
+                    proxies = load_proxies()
+                    updated = False
+                    for px in proxies:
+                        if px.get('ip') == payload.get('ip') and str(px.get('port')) == str(payload.get('port')):
+                            if res.get('detectedType') and px.get('type') != res.get('detectedType'):
+                                px['type'] = res.get('detectedType')
+                                updated = True
+                            if res.get('location'):
+                                px['location'] = res.get('location')
+                                updated = True
+                            if res.get('latency'):
+                                px['latency'] = res.get('latency')
+                                updated = True
+                            if res.get('countryCode'):
+                                px['countryCode'] = res.get('countryCode')
+                                updated = True
+                            if res.get('city'):
+                                px['city'] = res.get('city')
+                                updated = True
+                            if res.get('country'):
+                                px['country'] = res.get('country')
+                                updated = True
+                            if res.get('timezone'):
+                                px['timezone'] = res.get('timezone')
+                                updated = True
+                    if updated:
+                        save_proxies(proxies)
+                except Exception:
+                    pass
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "success": True,
-                    "latency": latency,
-                    "ip": ip,
-                    "port": port,
-                    "type": ptype,
-                    "location": geo.get('location', 'Online'),
-                    "timezone": geo.get('timezone', 'America/New_York'),
-                    "country": geo.get('country', ''),
-                    "city": geo.get('city', ''),
-                    "lat": geo.get('lat', 0),
-                    "lng": geo.get('lng', 0)
+                    "latency": res.get('latency'),
+                    "ip": res.get('ip'),
+                    "port": res.get('port'),
+                    "type": res.get('type'),
+                    "detectedType": res.get('detectedType'),
+                    "typeChanged": res.get('typeChanged', False),
+                    "location": res.get('location', 'Online'),
+                    "country": res.get('country', ''),
+                    "countryCode": res.get('countryCode', 'IN'),
+                    "city": res.get('city', ''),
+                    "timezone": res.get('timezone', 'Asia/Kolkata')
                 }).encode('utf-8'))
                 return
-            except Exception as err:
+            else:
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "success": False,
-                    "error": f"Connection unreachable on {ip}:{port} ({str(err)})"
+                    "error": res.get('error', 'Connection failed')
                 }).encode('utf-8'))
                 return
+
+        elif parsed.path == '/api/profiles/cookies/import':
+            profile_id = payload.get('id')
+            raw_cookies = payload.get('cookies')
+            imported_count = import_profile_cookies(profile_id, raw_cookies)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "count": imported_count}).encode('utf-8'))
+            return
+
+        elif parsed.path == '/api/profiles/cookies/clear':
+            profile_id = payload.get('id')
+            clear_profile_cookies(profile_id)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
+            return
+
+        elif parsed.path == '/api/proxies/test-all':
+            proxies_list = payload.get('proxies', [])
+            results = test_all_proxies_concurrent(proxies_list)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "results": results}).encode('utf-8'))
+            return
 
         elif parsed.path == '/api/profiles/launch':
             profile_id = payload.get('id')
@@ -532,12 +1124,16 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 self.end_headers()
                 return
 
+            CHROME_EXEC = get_chrome_executable()
             if not CHROME_EXEC:
-                logger.error("Google Chrome executable not found on system!")
+                logger.error("Google Chrome or Chromium executable not found on system!")
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": "Google Chrome executable not found."}).encode('utf-8'))
+                self.wfile.write(json.dumps({
+                    "error": "Chromium browser core is not installed. Please install one of the latest 3 versions.",
+                    "notInstalled": True
+                }).encode('utf-8'))
                 return
 
             valid, err_msg = validate_launch_inputs(profile)
@@ -604,7 +1200,9 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                         profile_id, profile['name'], width, height, useragent,
                         proxy_str, cdp_port, "https://browserleaks.com/canvas",
                         webgl_vendor, webgl_renderer, cpu_cores, memory_gb,
-                        proxy_user, proxy_pass, proxy_tz
+                        proxy_user, proxy_pass, proxy_tz,
+                        custom_extensions=profile.get('customExtensions') or [],
+                        fingerprint_seed=profile.get('fingerprintSeed') or profile.get('canvasSeed') or profile_id
                     )
                     running_processes[profile_id] = {
                         "pid": real_pid,
@@ -721,18 +1319,21 @@ def clear_port_3000_conflicts():
     try:
         if sys.platform == 'win32':
             result = subprocess.run(
-                'netstat -ano | findstr "LISTENING" | findstr ":3000 "',
+                'netstat -ano | findstr :3000',
                 shell=True, capture_output=True, text=True, timeout=3
             )
             my_pid = os.getpid()
             for line in result.stdout.strip().split('\n'):
-                parts = line.strip().split()
-                if parts:
-                    pid_str = parts[-1]
-                    if pid_str.isdigit():
-                        p_int = int(pid_str)
-                        if p_int > 0 and p_int != my_pid:
-                            subprocess.run(f'taskkill /F /PID {p_int} /T', shell=True, capture_output=True)
+                line = line.strip()
+                if 'LISTENING' in line:
+                    parts = line.split()
+                    if parts:
+                        pid_str = parts[-1]
+                        if pid_str.isdigit():
+                            p_int = int(pid_str)
+                            if p_int > 0 and p_int != my_pid:
+                                subprocess.run(f'taskkill /F /PID {p_int} /T', shell=True, capture_output=True)
+                                time.sleep(0.5)
     except Exception:
         pass
 
@@ -743,7 +1344,24 @@ if __name__ == '__main__':
     logger.info(f"[OmniShield Engine] Detected Chrome Executable: {CHROME_EXEC}")
     logger.info(f"[OmniShield Engine] Profiles Storage Directory: {PROFILES_BASE_DIR}")
     try:
-        server = ThreadingHTTPServer(('0.0.0.0', PORT), OmniShieldRequestHandler)
+        try:
+            server = ThreadingHTTPServer(('0.0.0.0', PORT), OmniShieldRequestHandler)
+        except OSError:
+            logger.info("[OmniShield Engine] Port 3000 busy, clearing conflicts and retrying...")
+            clear_port_3000_conflicts()
+            time.sleep(1.0)
+            server = ThreadingHTTPServer(('0.0.0.0', PORT), OmniShieldRequestHandler)
+
+        if '--no-browser' not in sys.argv:
+            def _auto_open_dashboard():
+                time.sleep(0.5)
+                import webbrowser
+                try:
+                    webbrowser.open(f"http://localhost:{PORT}")
+                except Exception:
+                    pass
+            threading.Thread(target=_auto_open_dashboard, daemon=True).start()
+
         server.serve_forever()
     except Exception as e:
         logger.error(f"[Server Error] Could not start server on port {PORT}: {e}")

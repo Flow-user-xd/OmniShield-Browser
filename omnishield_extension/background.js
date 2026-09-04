@@ -23,7 +23,7 @@ if (ua.includes('iPhone') || ua.includes('iPad') || ua.includes('OS 17') || ua.i
 } else if (ua.includes('Macintosh') || ua.includes('Mac OS X')) {
   targetOSName = 'macOS';
   targetPlatformVersion = '14.2.0';
-  targetArch = 'x86';
+  targetArch = ((cfg.webglRenderer && cfg.webglRenderer.includes('Apple')) || (cfg.webglVendor && cfg.webglVendor.includes('Apple'))) ? 'arm' : 'x86';
   targetModel = '';
   isMobile = false;
 } else if (ua.includes('Android')) {
@@ -36,6 +36,10 @@ if (ua.includes('iPhone') || ua.includes('iPad') || ua.includes('OS 17') || ua.i
   isMobile = ua.includes('Mobile');
 }
 
+const chromeM = ua.match(/(?:Chrome|CriOS)\/(\d+)\.([\d.]+)/);
+const chromeMajor = chromeM ? chromeM[1] : '150';
+const chromeFull = chromeM ? `${chromeMajor}.${chromeM[2]}` : '150.0.0.0';
+
 const headerRules = [
   {
     id: 1,
@@ -47,7 +51,9 @@ const headerRules = [
         { header: 'Sec-CH-UA-Mobile', operation: 'set', value: isMobile ? '?1' : '?0' },
         { header: 'Sec-CH-UA-Platform-Version', operation: 'set', value: `"${targetPlatformVersion}"` },
         { header: 'Sec-CH-UA-Model', operation: 'set', value: `"${targetModel}"` },
-        { header: 'Sec-CH-UA-Architecture', operation: 'set', value: `"${targetArch}"` }
+        { header: 'Sec-CH-UA-Architecture', operation: 'set', value: `"${targetArch}"` },
+        { header: 'Sec-CH-UA', operation: 'set', value: `"Chromium";v="${chromeMajor}", "Google Chrome";v="${chromeMajor}", "Not_A Brand";v="24"` },
+        { header: 'Sec-CH-UA-Full-Version-List', operation: 'set', value: `"Chromium";v="${chromeFull}", "Google Chrome";v="${chromeFull}", "Not_A Brand";v="24.0.0.0"` }
       ]
     },
     condition: {
@@ -65,17 +71,18 @@ if (ua) {
   });
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [1],
-    addRules: headerRules
+function updateRules() {
+  chrome.declarativeNetRequest.getDynamicRules(oldRules => {
+    const oldIds = oldRules.map(r => r.id);
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: oldIds.length > 0 ? oldIds : [1],
+      addRules: headerRules
+    });
   });
-});
+}
 
-chrome.declarativeNetRequest.updateDynamicRules({
-  removeRuleIds: [1],
-  addRules: headerRules
-});
+chrome.runtime.onInstalled.addListener(updateRules);
+updateRules();
 
 // =========================================================================
 // OmniShield Smart Omnibox Search Engine Resolver

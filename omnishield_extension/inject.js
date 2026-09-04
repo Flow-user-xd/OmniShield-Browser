@@ -94,7 +94,7 @@
     targetPlatform = 'MacIntel';
     targetOSName = 'macOS';
     targetPlatformVersion = '14.2.0';
-    targetArch = 'x86';
+    targetArch = (webglRenderer.includes('Apple') || webglVendor.includes('Apple')) ? 'arm' : 'x86';
     targetModel = '';
     isMobile = false;
   } else if (ua.includes('Android')) {
@@ -106,6 +106,13 @@
     targetModel = modM ? modM[1].trim() : '';
     targetArch = 'arm';
     isMobile = ua.includes('Mobile');
+  } else if (ua.includes('Linux') || ua.includes('X11')) {
+    targetPlatform = 'Linux x86_64';
+    targetOSName = 'Linux';
+    targetPlatformVersion = '6.5.0';
+    targetArch = 'x86';
+    targetModel = '';
+    isMobile = false;
   }
 
   // ==========================================
@@ -157,6 +164,16 @@
       }
     }
 
+    const targetDpr = (targetOSName === 'macOS' || targetOSName === 'iOS') ? 2 : 1;
+    try {
+      const dprGetter = function() { return targetDpr; };
+      makeNative(dprGetter, 'get devicePixelRatio');
+      Object.defineProperty(window, 'devicePixelRatio', {
+        get: dprGetter,
+        configurable: true
+      });
+    } catch(e) {}
+
     // Touch & Pointer Emulation for Mobile / Android profiles
     if (isMobile || targetOSName === 'Android' || targetOSName === 'iOS') {
       try {
@@ -199,25 +216,25 @@
   if (navigator.userAgentData || window.NavigatorUAData) {
     try {
       const chromeM = ua.match(/(?:Chrome|CriOS)\/(\d+)\.([\d.]+)/);
-      const chromeMajor = chromeM ? chromeM[1] : '131';
-      const chromeFull = chromeM ? `${chromeMajor}.${chromeM[2]}` : '131.0.6778.265';
+      const chromeMajor = chromeM ? chromeM[1] : '150';
+      const chromeFull = chromeM ? `${chromeMajor}.${chromeM[2]}` : '150.0.0.0';
 
       const brands = Object.freeze([
-        Object.freeze({ brand: 'Google Chrome', version: chromeMajor }),
         Object.freeze({ brand: 'Chromium', version: chromeMajor }),
+        Object.freeze({ brand: 'Google Chrome', version: chromeMajor }),
         Object.freeze({ brand: 'Not_A Brand', version: '24' })
       ]);
       const highEntropy = {
         architecture: targetArch,
         bitness: '64',
         brands: Object.freeze([
-          Object.freeze({ brand: 'Google Chrome', version: chromeFull }),
           Object.freeze({ brand: 'Chromium', version: chromeFull }),
+          Object.freeze({ brand: 'Google Chrome', version: chromeFull }),
           Object.freeze({ brand: 'Not_A Brand', version: '24.0.0.0' })
         ]),
         fullVersionList: Object.freeze([
-          Object.freeze({ brand: 'Google Chrome', version: chromeFull }),
           Object.freeze({ brand: 'Chromium', version: chromeFull }),
+          Object.freeze({ brand: 'Google Chrome', version: chromeFull }),
           Object.freeze({ brand: 'Not_A Brand', version: '24.0.0.0' })
         ]),
         mobile: isMobile,
@@ -287,8 +304,10 @@
       Object.defineProperty(window, 'outerWidth', { get: () => targetW, configurable: true });
       Object.defineProperty(window, 'outerHeight', { get: () => targetH - 40, configurable: true });
       Object.defineProperty(window, 'innerWidth', { get: () => targetW, configurable: true });
-      Object.defineProperty(window, 'innerHeight', { get: () => targetH - 85, configurable: true });
-      Object.defineProperty(window, 'devicePixelRatio', { get: () => 1, configurable: true });
+      const dprVal = (targetOSName === 'macOS' || targetOSName === 'iOS') ? 2 : 1;
+      const getDpr = () => dprVal;
+      makeNative(getDpr, 'get devicePixelRatio');
+      Object.defineProperty(window, 'devicePixelRatio', { get: getDpr, configurable: true });
     } catch (e) {}
 
     const orientType = isMobile ? 'portrait-primary' : 'landscape-primary';
@@ -301,11 +320,63 @@
   } catch (e) {}
 
   // ==========================================
-  // 4. WEBGL VENDOR, RENDERER & PARAMETERS
+  // 4. MEDIA DEVICES & GEOLOCATION MOCKING
   // ==========================================
   try {
-    const maxTexSize = (seedHash('maxtex') % 2 === 0) ? 16384 : 8192;
-    const maxRenderSize = (seedHash('maxrender') % 2 === 0) ? 16384 : 8192;
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      const isMacDev = targetOSName === 'macOS';
+      const micLabel = isMacDev ? 'MacBook Pro Microphone (Built-in)' : 'Microphone (Realtek(R) Audio)';
+      const speakerLabel = isMacDev ? 'MacBook Pro Speakers (Built-in)' : 'Speakers (Realtek(R) Audio)';
+      const camLabel = isMacDev ? 'FaceTime HD Camera' : 'Integrated HD Webcam (04f2:b6d9)';
+      const fakeDevs = [
+        { deviceId: 'default', kind: 'audioinput', label: micLabel, groupId: 'group-default' },
+        { deviceId: 'audio-in-1', kind: 'audioinput', label: micLabel, groupId: 'group-1' },
+        { deviceId: 'default', kind: 'audiooutput', label: speakerLabel, groupId: 'group-default' },
+        { deviceId: 'audio-out-1', kind: 'audiooutput', label: speakerLabel, groupId: 'group-1' },
+        { deviceId: 'video-in-1', kind: 'videoinput', label: camLabel, groupId: 'group-cam' }
+      ];
+      const patchedEnumerate = async function() {
+        return fakeDevs.map(d => Object.assign(Object.create(window.MediaDeviceInfo ? window.MediaDeviceInfo.prototype : Object.prototype), d));
+      };
+      makeNative(patchedEnumerate, 'enumerateDevices');
+      navigator.mediaDevices.enumerateDevices = patchedEnumerate;
+    }
+  } catch (e) {}
+
+  try {
+    if (navigator.geolocation) {
+      const proxyLat = (cfg.proxy && cfg.proxy.lat) || cfg.lat || null;
+      const proxyLng = (cfg.proxy && cfg.proxy.lng) || cfg.lng || null;
+      if (proxyLat !== null && proxyLng !== null) {
+        const fakePos = {
+          coords: {
+            latitude: Number(proxyLat),
+            longitude: Number(proxyLng),
+            accuracy: 25.0,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null
+          },
+          timestamp: Date.now()
+        };
+        navigator.geolocation.getCurrentPosition = makeNative(function(success) {
+          if (typeof success === 'function') setTimeout(() => success(fakePos), 10);
+        }, 'getCurrentPosition');
+        navigator.geolocation.watchPosition = makeNative(function(success) {
+          if (typeof success === 'function') setTimeout(() => success(fakePos), 10);
+          return 1;
+        }, 'watchPosition');
+      }
+    }
+  } catch (e) {}
+
+  // ==========================================
+  // 5. WEBGL VENDOR, RENDERER & PARAMETERS
+  // ==========================================
+  try {
+    const maxTexSize = 16384;
+    const maxRenderSize = 16384;
     const maxViewportDims = new Int32Array([maxTexSize, maxTexSize]);
 
     const getParamOrig = WebGLRenderingContext.prototype.getParameter;
@@ -781,28 +852,172 @@
   } catch (e) {}
 
   // ==========================================
-  // 15. OS FONT ALLOWLIST & ENUMERATION SPOOFING
+  // 15. SELECTIVE CROSS-OS FONT SHIELD & PER-PROFILE METRICS SPOOFING
   // ==========================================
   try {
-    const winFonts = new Set(['arial', 'calibri', 'cambria', 'comic sans ms', 'consolas', 'courier new', 'georgia', 'impact', 'segoe ui', 'tahoma', 'times new roman', 'trebuchet ms', 'verdana']);
-    const macFonts = new Set(['american typewriter', 'andale mono', 'arial', 'courier', 'georgia', 'helvetica', 'helvetica neue', 'impact', 'monaco', 'san francisco', 'times new roman', 'trebuchet ms', 'verdana']);
-    const androidFonts = new Set(['arial', 'droid sans', 'droid sans mono', 'droid serif', 'noto color emoji', 'noto sans', 'noto serif', 'roboto', 'roboto condensed', 'roboto mono', 'sans-serif', 'serif', 'monospace']);
-    let allowedFonts = winFonts;
-    if (targetOSName === 'macOS' || targetOSName === 'iOS') {
-      allowedFonts = macFonts;
-    } else if (targetOSName === 'Android') {
-      allowedFonts = androidFonts;
+    const isAppleOS = (targetOSName === 'macOS' || targetOSName === 'iOS');
+    const isLinuxOS = (targetOSName === 'Linux');
+
+    // Windows font families to mask on non-Windows profiles (macOS, iOS, Linux)
+    const winBlockedPrefixes = [
+      'segoe', 'calibri', 'cambria', 'consolas', 'tahoma',
+      'ms gothic', 'ms pgothic', 'ms ui gothic', 'ms sans serif', 'ms serif',
+      'arial black', 'century gothic', 'franklin gothic', 'lucida console',
+      'palatino linotype', 'sitka', 'corbel', 'candara', 'constantia', 'ebrima',
+      'gadugi', 'leelawadee', 'malgun gothic', 'microsoft',
+      'simsun', 'nsimsun', 'yu gothic', 'comic sans', 'bahnschrift', 'agency fb', 'algerian', 'marlett'
+    ];
+
+    // Authentic Apple system fonts to affirm on macOS / iOS
+    const appleSystemFonts = new Set([
+      '-apple-system', 'blinkmacsystemfont', 'helvetica neue', 'helvetica',
+      'san francisco', 'sf pro', 'sf pro text', 'sf pro display', 'sf mono',
+      'monaco', 'menlo', 'geneva', 'lucida grande', 'apple color emoji',
+      'american typewriter', 'andale mono', 'arial', 'courier', 'courier new',
+      'georgia', 'times new roman', 'trebuchet ms', 'verdana', 'impact', 'charter'
+    ]);
+
+    function cleanFontName(fontStr) {
+      if (!fontStr) return '';
+      return fontStr.toLowerCase().replace(/['"]/g, '').trim();
     }
 
-    if (document.fonts && document.fonts.check) {
-      const origCheck = document.fonts.check;
-      document.fonts.check = function(fontStr, text) {
-        if (fontStr) {
-          const cleanFont = fontStr.toLowerCase().replace(/['"]/g, '').split(',')[0].trim();
-          if (!allowedFonts.has(cleanFont)) return false;
+    // Precise detector for font enumeration and metrics probing elements
+    function isFontProbeElement(elem) {
+      if (!elem) return false;
+      try {
+        if (elem.id && (elem.id.includes('font') || elem.id.includes('glyph'))) return true;
+        if (elem.closest && (
+          elem.closest('#fonts-metrics-testbox') ||
+          elem.closest('#fonts-glyphs-testbox') ||
+          elem.closest('[id*="font"]') ||
+          elem.closest('[id*="glyph"]')
+        )) return true;
+        const s = elem.style;
+        if (!s) return false;
+        if (s.fontSize === '128px' || s.fontSize === '72px' || s.fontSize === '48px') return true;
+        if (s.position === 'absolute' || s.position === 'fixed') {
+          const l = parseFloat(s.left);
+          const t = parseFloat(s.top);
+          if ((!isNaN(l) && l < -200) || (!isNaN(t) && t < -200)) return true;
         }
-        return origCheck.apply(this, arguments);
+      } catch (e) {}
+      return false;
+    }
+
+    // Deterministic micro-variation noise seeded per profile
+    function getFontNoise(elem, prop) {
+      const text = (elem.textContent || elem.innerText || '');
+      const ff = cleanFontName(elem.style ? elem.style.fontFamily : '');
+      const str = text.slice(0, 30) + ':' + ff + ':' + prop;
+      let h = seedHash('font_metrics');
+      for (let i = 0; i < str.length; i++) {
+        h = (h * 31 + str.charCodeAt(i)) & 0x7FFFFFFF;
+      }
+      return (h % 5) - 2; // Stable -2 to +2 px offset
+    }
+
+    // 1. FontFaceSet.check() & document.fonts.check() Hook
+    const fontTarget = (window.FontFaceSet && window.FontFaceSet.prototype) ? window.FontFaceSet.prototype : (document.fonts || {});
+    if (fontTarget && fontTarget.check) {
+      const origCheck = fontTarget.check;
+      const hookedCheck = function(fontStr, text) {
+        if (fontStr) {
+          const fontClean = cleanFontName(fontStr);
+          if (isAppleOS || isLinuxOS) {
+            if (winBlockedPrefixes.some(b => fontClean.includes(b))) return false;
+          }
+          if (isAppleOS) {
+            if (appleSystemFonts.has(fontClean.split(',')[0].trim())) return true;
+          }
+        }
+        try {
+          return origCheck.apply(this, arguments);
+        } catch (e) {
+          return false;
+        }
       };
+      makeNative(hookedCheck, 'check');
+      fontTarget.check = hookedCheck;
+      if (document.fonts) document.fonts.check = hookedCheck;
+    }
+
+    // 2. DOM Measuring Hooks (offsetWidth, offsetHeight)
+    if (window.HTMLElement && window.HTMLElement.prototype) {
+      const origOffsetW = Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, 'offsetWidth').get;
+      const origOffsetH = Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, 'offsetHeight').get;
+
+      let fallbackW = null;
+      let fallbackH = null;
+
+      const patchedOffsetW = function() {
+        const val = origOffsetW.call(this);
+        if (val === 0) return val;
+
+        if (isFontProbeElement(this)) {
+          const ff = cleanFontName(this.style ? this.style.fontFamily : '');
+          if (ff.includes('br0k3nd3f4u17')) {
+            fallbackW = val;
+            return val;
+          }
+          if ((isAppleOS || isLinuxOS) && winBlockedPrefixes.some(b => ff.includes(b))) {
+            return fallbackW !== null ? fallbackW : val;
+          }
+          if (isAppleOS && appleSystemFonts.has(ff.split(',')[0].trim())) {
+            if (val === fallbackW) return val + 28 + getFontNoise(this, 'w');
+          }
+          const n = getFontNoise(this, 'w');
+          return Math.max(1, val + n);
+        }
+        return val;
+      };
+      makeNative(patchedOffsetW, 'get offsetWidth');
+      Object.defineProperty(window.HTMLElement.prototype, 'offsetWidth', {
+        get: patchedOffsetW,
+        enumerable: true,
+        configurable: true
+      });
+
+      const patchedOffsetH = function() {
+        const val = origOffsetH.call(this);
+        if (val === 0) return val;
+
+        if (isFontProbeElement(this)) {
+          const ff = cleanFontName(this.style ? this.style.fontFamily : '');
+          if (ff.includes('br0k3nd3f4u17')) {
+            fallbackH = val;
+            return val;
+          }
+          if ((isAppleOS || isLinuxOS) && winBlockedPrefixes.some(b => ff.includes(b))) {
+            return fallbackH !== null ? fallbackH : val;
+          }
+          const n = getFontNoise(this, 'h');
+          return Math.max(1, val + n);
+        }
+        return val;
+      };
+      makeNative(patchedOffsetH, 'get offsetHeight');
+      Object.defineProperty(window.HTMLElement.prototype, 'offsetHeight', {
+        get: patchedOffsetH,
+        enumerable: true,
+        configurable: true
+      });
+    }
+
+    // 3. getBoundingClientRect Hook for rect-based font probes
+    if (window.Element && window.Element.prototype) {
+      const origGetBCR = window.Element.prototype.getBoundingClientRect;
+      const patchedGetBCR = function() {
+        const r = origGetBCR.call(this);
+        if (isFontProbeElement(this)) {
+          const nw = getFontNoise(this, 'w');
+          const nh = getFontNoise(this, 'h');
+          return new DOMRect(r.x, r.y, Math.max(1, r.width + nw), Math.max(1, r.height + nh));
+        }
+        return r;
+      };
+      makeNative(patchedGetBCR, 'getBoundingClientRect');
+      window.Element.prototype.getBoundingClientRect = patchedGetBCR;
     }
   } catch (e) {}
 
