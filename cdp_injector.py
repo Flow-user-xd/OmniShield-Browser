@@ -24,10 +24,15 @@ def inject_cdp_overrides(port, os_type='macOS'):
         
         # Script to inject before any page scripts run (Page.addScriptToEvaluateOnNewDocument)
         override_script = """
-        Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
-        Object.defineProperty(navigator, 'oscpu', { get: () => 'Intel Mac OS X 10.15' });
-        Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 12 });
-        Object.defineProperty(navigator, 'deviceMemory', { get: () => 32 });
+        if (typeof Navigator !== 'undefined' && Navigator.prototype) {
+          Object.defineProperty(Navigator.prototype, 'platform', { get: () => 'MacIntel', configurable: true });
+          Object.defineProperty(Navigator.prototype, 'oscpu', { get: () => 'Intel Mac OS X 10.15', configurable: true });
+          Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { get: () => 12, configurable: true });
+          Object.defineProperty(Navigator.prototype, 'deviceMemory', { get: () => 8, configurable: true });
+        }
+        ['platform', 'oscpu', 'hardwareConcurrency', 'deviceMemory'].forEach(p => {
+          try { if (navigator.hasOwnProperty(p)) delete navigator[p]; } catch(e) {}
+        });
         
         if (navigator.userAgentData) {
           Object.defineProperty(navigator, 'userAgentData', {

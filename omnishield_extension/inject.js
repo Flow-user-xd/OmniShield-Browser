@@ -41,27 +41,45 @@
     return Math.abs(hash);
   }
 
-  // Anti-Detection: Native Function.prototype.toString disguise
+  // Anti-Detection: Native Function.prototype.toString disguise (Akamai & CreepJS Spec)
   const nativeFnToString = Function.prototype.toString;
   const nativeMap = new WeakMap();
 
-  function makeNative(fn, name) {
+  function makeNative(fn, name, isConstructor = false) {
+    const cleanName = name || fn.name || '';
     if (name) {
       try { Object.defineProperty(fn, 'name', { value: name, configurable: true }); } catch(e) {}
     }
-    nativeMap.set(fn, name || (fn.name || ''));
-    return fn;
+    if (isConstructor || (fn.prototype && typeof fn.prototype === 'object' && fn.prototype.constructor === fn && Object.keys(fn.prototype).length > 0)) {
+      nativeMap.set(fn, cleanName);
+      return fn;
+    }
+    // Method shorthand generates functions without .prototype, matching native V8 methods and getters
+    const wrapper = {
+      [cleanName](...args) {
+        return fn.apply(this, args);
+      }
+    }[cleanName];
+    try { Object.defineProperty(wrapper, 'length', { value: fn.length, configurable: true }); } catch(e) {}
+    nativeMap.set(wrapper, cleanName);
+    nativeMap.set(fn, cleanName);
+    return wrapper;
   }
 
   try {
-    const patchedToString = function() {
-      if (nativeMap.has(this)) {
-        const n = nativeMap.get(this);
-        return `function ${n}() { [native code] }`;
+    const patchedToString = {
+      toString() {
+        if (typeof this !== 'function') {
+          return nativeFnToString.call(this);
+        }
+        if (nativeMap.has(this)) {
+          const n = nativeMap.get(this);
+          return `function ${n}() { [native code] }`;
+        }
+        return nativeFnToString.call(this);
       }
-      return nativeFnToString.call(this);
-    };
-    makeNative(patchedToString, 'toString');
+    }.toString;
+    nativeMap.set(patchedToString, 'toString');
     Function.prototype.toString = patchedToString;
   } catch(e) {}
 
@@ -128,8 +146,8 @@
   try {
     if (navigator.hasOwnProperty('webdriver')) delete navigator.webdriver;
     if (window.Navigator && window.Navigator.prototype) {
-      const getWd = function() { return false; };
-      makeNative(getWd, 'get webdriver');
+      let getWd = function() { return false; };
+      getWd = makeNative(getWd, 'get webdriver');
       Object.defineProperty(window.Navigator.prototype, 'webdriver', {
         get: getWd,
         set: undefined,
@@ -155,10 +173,11 @@
   // 2. NAVIGATOR & PLATFORM SPOOFING (PROTOTYPE-ONLY DISGUISE)
   // ==========================================
   try {
+    const clampedMemoryGb = (memoryGb >= 8) ? 8 : ((memoryGb >= 4) ? 4 : ((memoryGb >= 2) ? 2 : 1));
     const navProps = {
       platform: targetPlatform,
       hardwareConcurrency: cpuCores,
-      deviceMemory: memoryGb,
+      deviceMemory: clampedMemoryGb,
       language: userLang,
       languages: Object.freeze(userLangs),
       userAgent: ua,
@@ -180,8 +199,8 @@
     if (window.Navigator && window.Navigator.prototype) {
       for (const [p, v] of Object.entries(navProps)) {
         try {
-          const getter = function() { return v; };
-          makeNative(getter, `get ${p}`);
+          let getter = function() { return v; };
+          getter = makeNative(getter, `get ${p}`);
           Object.defineProperty(window.Navigator.prototype, p, {
             get: getter,
             set: undefined,
@@ -194,8 +213,8 @@
 
     const targetDpr = (targetOSName === 'macOS' || targetOSName === 'iOS') ? 2 : 1;
     try {
-      const dprGetter = function() { return targetDpr; };
-      makeNative(dprGetter, 'get devicePixelRatio');
+      let dprGetter = function() { return targetDpr; };
+      dprGetter = makeNative(dprGetter, 'get devicePixelRatio');
       Object.defineProperty(window, 'devicePixelRatio', {
         get: dprGetter,
         configurable: true
@@ -216,7 +235,7 @@
         }
         if (window.matchMedia) {
           const origMatchMedia = window.matchMedia;
-          const patchedMatchMedia = function(query) {
+          let patchedMatchMedia = function(query) {
             const m = origMatchMedia.apply(this, arguments);
             if (typeof query === 'string') {
               const clean = query.replace(/\s+/g, '').toLowerCase();
@@ -235,7 +254,7 @@
             }
             return m;
           };
-          makeNative(patchedMatchMedia, 'matchMedia');
+          patchedMatchMedia = makeNative(patchedMatchMedia, 'matchMedia');
           window.matchMedia = patchedMatchMedia;
         }
       } catch (e) {}
@@ -297,8 +316,8 @@
         Object.defineProperty(mockUAData, Symbol.toStringTag, { value: 'NavigatorUAData' });
 
         if (window.Navigator && window.Navigator.prototype) {
-          const getUAData = function() { return mockUAData; };
-          makeNative(getUAData, 'get userAgentData');
+          let getUAData = function() { return mockUAData; };
+          getUAData = makeNative(getUAData, 'get userAgentData');
           Object.defineProperty(window.Navigator.prototype, 'userAgentData', {
             get: getUAData,
             configurable: true,
@@ -319,8 +338,8 @@
     const colDepth = 24;
 
     function makeScreenGetter(prop, val) {
-      const g = function() { return val; };
-      makeNative(g, `get ${prop}`);
+      let g = function() { return val; };
+      g = makeNative(g, `get ${prop}`);
       return { get: g, configurable: true, enumerable: true };
     }
 
@@ -342,26 +361,26 @@
     // Override inner/outer window dimensions and DPR on window (responsive to automation resizing)
     try {
       if (typeof window.innerWidth === 'number' && window.innerWidth === 0) {
-        const getInnerW = function() { return window.innerWidth || targetW; };
-        makeNative(getInnerW, 'get innerWidth');
+        let getInnerW = function() { return window.innerWidth || targetW; };
+        getInnerW = makeNative(getInnerW, 'get innerWidth');
         Object.defineProperty(window, 'innerWidth', { get: getInnerW, configurable: true });
 
-        const getInnerH = function() { return window.innerHeight || (targetH - 85); };
-        makeNative(getInnerH, 'get innerHeight');
+        let getInnerH = function() { return window.innerHeight || (targetH - 85); };
+        getInnerH = makeNative(getInnerH, 'get innerHeight');
         Object.defineProperty(window, 'innerHeight', { get: getInnerH, configurable: true });
 
-        const getOuterW = function() { return window.outerWidth || targetW; };
-        makeNative(getOuterW, 'get outerWidth');
+        let getOuterW = function() { return window.outerWidth || targetW; };
+        getOuterW = makeNative(getOuterW, 'get outerWidth');
         Object.defineProperty(window, 'outerWidth', { get: getOuterW, configurable: true });
 
-        const getOuterH = function() { return window.outerHeight || (targetH - 40); };
-        makeNative(getOuterH, 'get outerHeight');
+        let getOuterH = function() { return window.outerHeight || (targetH - 40); };
+        getOuterH = makeNative(getOuterH, 'get outerHeight');
         Object.defineProperty(window, 'outerHeight', { get: getOuterH, configurable: true });
       }
 
       const dprVal = (targetOSName === 'macOS' || targetOSName === 'iOS') ? 2 : 1;
-      const getDpr = function() { return dprVal; };
-      makeNative(getDpr, 'get devicePixelRatio');
+      let getDpr = function() { return dprVal; };
+      getDpr = makeNative(getDpr, 'get devicePixelRatio');
       Object.defineProperty(window, 'devicePixelRatio', { get: getDpr, configurable: true });
     } catch (e) {}
 
@@ -370,16 +389,16 @@
 
     if (window.ScreenOrientation && window.ScreenOrientation.prototype) {
       try {
-        const getOType = function() { return orientType; };
-        makeNative(getOType, 'get type');
+        let getOType = function() { return orientType; };
+        getOType = makeNative(getOType, 'get type');
         Object.defineProperty(window.ScreenOrientation.prototype, 'type', {
           get: getOType,
           configurable: true,
           enumerable: true
         });
 
-        const getOAngle = function() { return orientAngle; };
-        makeNative(getOAngle, 'get angle');
+        let getOAngle = function() { return orientAngle; };
+        getOAngle = makeNative(getOAngle, 'get angle');
         Object.defineProperty(window.ScreenOrientation.prototype, 'angle', {
           get: getOAngle,
           configurable: true,
@@ -412,10 +431,10 @@
     ];
 
     if (window.MediaDevices && window.MediaDevices.prototype && window.MediaDevices.prototype.enumerateDevices) {
-      const patchedEnumerate = async function() {
+      let patchedEnumerate = async function() {
         return fakeDevs.map(d => Object.assign(Object.create(window.MediaDeviceInfo ? window.MediaDeviceInfo.prototype : Object.prototype), d));
       };
-      makeNative(patchedEnumerate, 'enumerateDevices');
+      patchedEnumerate = makeNative(patchedEnumerate, 'enumerateDevices');
       window.MediaDevices.prototype.enumerateDevices = patchedEnumerate;
       if (navigator.mediaDevices && navigator.mediaDevices.hasOwnProperty('enumerateDevices')) {
         delete navigator.mediaDevices.enumerateDevices;
@@ -439,17 +458,17 @@
         },
         timestamp: Date.now()
       };
-      const patchedGetPos = function(success) {
+      let patchedGetPos = function(success) {
         if (typeof success === 'function') setTimeout(() => success(fakePos), 10);
       };
-      makeNative(patchedGetPos, 'getCurrentPosition');
+      patchedGetPos = makeNative(patchedGetPos, 'getCurrentPosition');
       window.Geolocation.prototype.getCurrentPosition = patchedGetPos;
 
-      const patchedWatchPos = function(success) {
+      let patchedWatchPos = function(success) {
         if (typeof success === 'function') setTimeout(() => success(fakePos), 10);
         return 1;
       };
-      makeNative(patchedWatchPos, 'watchPosition');
+      patchedWatchPos = makeNative(patchedWatchPos, 'watchPosition');
       window.Geolocation.prototype.watchPosition = patchedWatchPos;
 
       if (navigator.geolocation) {
@@ -461,14 +480,46 @@
 
   // Document Focus & Visibility Alignment (prototype-only to prevent detection)
   try {
-    if (typeof Document !== 'undefined' && Document.prototype && Document.prototype.hasFocus) {
-      const origHasFocus = Document.prototype.hasFocus;
-      const patchedHasFocus = function() { return true; };
-      makeNative(patchedHasFocus, 'hasFocus');
-      Document.prototype.hasFocus = patchedHasFocus;
+    if (typeof Document !== 'undefined' && Document.prototype) {
+      if (Document.prototype.hasFocus) {
+        Document.prototype.hasFocus = makeNative(function() { return true; }, 'hasFocus');
+      }
+      if ('hidden' in Document.prototype) {
+        Object.defineProperty(Document.prototype, 'hidden', {
+          get: makeNative(function() { return false; }, 'get hidden'),
+          configurable: true,
+          enumerable: true
+        });
+      }
+      if ('visibilityState' in Document.prototype) {
+        Object.defineProperty(Document.prototype, 'visibilityState', {
+          get: makeNative(function() { return 'visible'; }, 'get visibilityState'),
+          configurable: true,
+          enumerable: true
+        });
+      }
     }
-    if (typeof document !== 'undefined' && document.hasOwnProperty('hasFocus')) {
-      delete document.hasFocus;
+    if (typeof document !== 'undefined') {
+      if (document.hasOwnProperty('hasFocus')) delete document.hasFocus;
+      if (document.hasOwnProperty('hidden')) delete document.hidden;
+      if (document.hasOwnProperty('visibilityState')) delete document.visibilityState;
+    }
+  } catch(e) {}
+
+  // Event isTrusted & Synthetic Event Disguise (Akamai Heuristic Defense)
+  try {
+    if (typeof EventTarget !== 'undefined' && EventTarget.prototype.dispatchEvent) {
+      const origDispatch = EventTarget.prototype.dispatchEvent;
+      let patchedDispatch = function(event) {
+        if (event && !event.isTrusted) {
+          try {
+            Object.defineProperty(event, 'isTrusted', { value: true, configurable: true });
+          } catch(e) {}
+        }
+        return origDispatch.apply(this, arguments);
+      };
+      patchedDispatch = makeNative(patchedDispatch, 'dispatchEvent');
+      EventTarget.prototype.dispatchEvent = patchedDispatch;
     }
   } catch(e) {}
 
@@ -482,7 +533,7 @@
     const maxViewportDims = new Int32Array([maxTexSize, maxTexSize]);
 
     const getParamOrig = WebGLRenderingContext.prototype.getParameter;
-    const patchedGetParam = function(param) {
+    let patchedGetParam = function(param) {
       const res = getParamOrig.apply(this, arguments);
       if (param === 37445) return webglVendor;       // UNMASKED_VENDOR_WEBGL
       if (param === 37446) return webglRenderer;     // UNMASKED_RENDERER_WEBGL
@@ -491,12 +542,12 @@
       if (param === 3386)  return maxViewportDims;   // MAX_VIEWPORT_DIMS
       return res;
     };
-    makeNative(patchedGetParam, 'getParameter');
+    patchedGetParam = makeNative(patchedGetParam, 'getParameter');
     WebGLRenderingContext.prototype.getParameter = patchedGetParam;
 
     if (window.WebGL2RenderingContext) {
       const getParamOrig2 = WebGL2RenderingContext.prototype.getParameter;
-      const patchedGetParam2 = function(param) {
+      let patchedGetParam2 = function(param) {
         const res = getParamOrig2.apply(this, arguments);
         if (param === 37445) return webglVendor;
         if (param === 37446) return webglRenderer;
@@ -505,7 +556,7 @@
         if (param === 3386)  return maxViewportDims;
         return res;
       };
-      makeNative(patchedGetParam2, 'getParameter');
+      patchedGetParam2 = makeNative(patchedGetParam2, 'getParameter');
       WebGL2RenderingContext.prototype.getParameter = patchedGetParam2;
     }
 
@@ -516,18 +567,18 @@
       const origGetSupported = proto.getSupportedExtensions;
       const origGetExtension = proto.getExtension;
       if (origGetSupported) {
-        const patchedGetSupported = function() {
+        let patchedGetSupported = function() {
           let list = origGetSupported.apply(this, arguments) || [];
           list = isMobileGPU
             ? list.filter((e) => !DESKTOP_ONLY_EXT.includes(e))
             : list.filter((e) => !MOBILE_ONLY_EXT.includes(e));
           return list;
         };
-        makeNative(patchedGetSupported, 'getSupportedExtensions');
+        patchedGetSupported = makeNative(patchedGetSupported, 'getSupportedExtensions');
         proto.getSupportedExtensions = patchedGetSupported;
       }
       if (origGetExtension) {
-        const patchedGetExtension = function(name) {
+        let patchedGetExtension = function(name) {
           if (name === 'WEBGL_debug_renderer_info') {
             return {
               UNMASKED_VENDOR_WEBGL: 37445,
@@ -538,7 +589,7 @@
           if (!isMobileGPU && MOBILE_ONLY_EXT.includes(name)) return null;
           return origGetExtension.apply(this, arguments);
         };
-        makeNative(patchedGetExtension, 'getExtension');
+        patchedGetExtension = makeNative(patchedGetExtension, 'getExtension');
         proto.getExtension = patchedGetExtension;
       }
     };
@@ -548,7 +599,7 @@
     const patchShaderPrecision = (proto) => {
       const origGetShaderPrecision = proto.getShaderPrecisionFormat;
       if (origGetShaderPrecision) {
-        const patchedGetShaderPrecision = function(shaderType, precisionType) {
+        let patchedGetShaderPrecision = function(shaderType, precisionType) {
           const res = origGetShaderPrecision.apply(this, arguments);
           if (res && !isMobileGPU && res.precision < 23) {
             const fakePrecision = {
@@ -564,7 +615,7 @@
           }
           return res;
         };
-        makeNative(patchedGetShaderPrecision, 'getShaderPrecisionFormat');
+        patchedGetShaderPrecision = makeNative(patchedGetShaderPrecision, 'getShaderPrecisionFormat');
         proto.getShaderPrecisionFormat = patchedGetShaderPrecision;
       }
     };
@@ -590,20 +641,20 @@
       const origToDataURL = targetWin.HTMLCanvasElement.prototype.toDataURL;
       const origGetImageData = targetWin.CanvasRenderingContext2D.prototype.getImageData;
       const origToBlob = targetWin.HTMLCanvasElement.prototype.toBlob;
-      const origIsPointInPath = targetWin.CanvasRenderingContext2D.prototype.isPointInPath;
-      makeNative(origIsPointInPath, 'isPointInPath');
+      let origIsPointInPath = targetWin.CanvasRenderingContext2D.prototype.isPointInPath;
+      origIsPointInPath = makeNative(origIsPointInPath, 'isPointInPath');
 
       const canvasContextMap = new WeakMap();
       if (targetWin.HTMLCanvasElement.prototype.getContext) {
         const origGetCtx = targetWin.HTMLCanvasElement.prototype.getContext;
-        const patchedGetCtx = function(type) {
+        let patchedGetCtx = function(type) {
           const res = origGetCtx.apply(this, arguments);
           if (res && typeof type === 'string') {
             canvasContextMap.set(this, type.toLowerCase());
           }
           return res;
         };
-        makeNative(patchedGetCtx, 'getContext');
+        patchedGetCtx = makeNative(patchedGetCtx, 'getContext');
         targetWin.HTMLCanvasElement.prototype.getContext = patchedGetCtx;
       }
 
@@ -641,7 +692,7 @@
         return true;
       }
 
-      const patchedToDataURL = function() {
+      let patchedToDataURL = function() {
         if (!isFingerprintCanvas(this, this.width, this.height)) {
           return origToDataURL.apply(this, arguments);
         }
@@ -674,10 +725,10 @@
         } catch (err) {}
         return origToDataURL.apply(this, arguments);
       };
-      makeNative(patchedToDataURL, 'toDataURL');
+      patchedToDataURL = makeNative(patchedToDataURL, 'toDataURL');
       targetWin.HTMLCanvasElement.prototype.toDataURL = patchedToDataURL;
 
-      const patchedGetImageData = function(x, y, w, h) {
+      let patchedGetImageData = function(x, y, w, h) {
         const res = origGetImageData.apply(this, arguments);
         const canvasEl = this.canvas;
         if (!isFingerprintCanvas(canvasEl, w, h)) {
@@ -690,10 +741,10 @@
         } catch (e) {}
         return res;
       };
-      makeNative(patchedGetImageData, 'getImageData');
+      patchedGetImageData = makeNative(patchedGetImageData, 'getImageData');
       targetWin.CanvasRenderingContext2D.prototype.getImageData = patchedGetImageData;
 
-      const patchedToBlob = function(callback, type, quality) {
+      let patchedToBlob = function(callback, type, quality) {
         if (!isFingerprintCanvas(this, this.width, this.height)) {
           return origToBlob.call(this, callback, type, quality);
         }
@@ -726,13 +777,13 @@
         } catch (e) {}
         return origToBlob.call(this, callback, type, quality);
       };
-      makeNative(patchedToBlob, 'toBlob');
+      patchedToBlob = makeNative(patchedToBlob, 'toBlob');
       targetWin.HTMLCanvasElement.prototype.toBlob = patchedToBlob;
 
       // OffscreenCanvas & OffscreenCanvasRenderingContext2D Hooking
       if (targetWin.OffscreenCanvas && targetWin.OffscreenCanvas.prototype.convertToBlob) {
         const origConvertToBlob = targetWin.OffscreenCanvas.prototype.convertToBlob;
-        const patchedConvertToBlob = async function(options) {
+        let patchedConvertToBlob = async function(options) {
           if (isIntegrityCanvas(this.width, this.height)) {
             return origConvertToBlob.apply(this, arguments);
           }
@@ -763,13 +814,13 @@
           } catch(e) {}
           return origConvertToBlob.apply(this, arguments);
         };
-        makeNative(patchedConvertToBlob, 'convertToBlob');
+        patchedConvertToBlob = makeNative(patchedConvertToBlob, 'convertToBlob');
         targetWin.OffscreenCanvas.prototype.convertToBlob = patchedConvertToBlob;
       }
 
       if (targetWin.OffscreenCanvasRenderingContext2D && targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData) {
         const origOffGetImageData = targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData;
-        const patchedOffGetImageData = function(x, y, w, h) {
+        let patchedOffGetImageData = function(x, y, w, h) {
           const res = origOffGetImageData.apply(this, arguments);
           if (isIntegrityCanvas(w, h)) return res;
           try {
@@ -779,7 +830,7 @@
           } catch(e) {}
           return res;
         };
-        makeNative(patchedOffGetImageData, 'getImageData');
+        patchedOffGetImageData = makeNative(patchedOffGetImageData, 'getImageData');
         targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData = patchedOffGetImageData;
       }
 
@@ -787,7 +838,7 @@
       const pointJitter = ((seedHash('canvas_point') % 5) - 2) * 0.00005;
       if (targetWin.CanvasRenderingContext2D && targetWin.CanvasRenderingContext2D.prototype.isPointInPath) {
         const origIsPoint = targetWin.CanvasRenderingContext2D.prototype.isPointInPath;
-        const patchedIsPoint = function(a, b, c, d) {
+        let patchedIsPoint = function(a, b, c, d) {
           if (typeof a === 'number' && typeof b === 'number') {
             return origIsPoint.call(this, a + pointJitter, b + pointJitter, c);
           } else if (a instanceof Path2D && typeof b === 'number' && typeof c === 'number') {
@@ -795,11 +846,11 @@
           }
           return origIsPoint.apply(this, arguments);
         };
-        makeNative(patchedIsPoint, 'isPointInPath');
+        patchedIsPoint = makeNative(patchedIsPoint, 'isPointInPath');
         targetWin.CanvasRenderingContext2D.prototype.isPointInPath = patchedIsPoint;
 
         const origIsStroke = targetWin.CanvasRenderingContext2D.prototype.isPointInStroke;
-        const patchedIsStroke = function(a, b, c, d) {
+        let patchedIsStroke = function(a, b, c, d) {
           if (typeof a === 'number' && typeof b === 'number') {
             return origIsStroke.call(this, a + pointJitter, b + pointJitter, c);
           } else if (a instanceof Path2D && typeof b === 'number' && typeof c === 'number') {
@@ -807,13 +858,13 @@
           }
           return origIsStroke.apply(this, arguments);
         };
-        makeNative(patchedIsStroke, 'isPointInStroke');
+        patchedIsStroke = makeNative(patchedIsStroke, 'isPointInStroke');
         targetWin.CanvasRenderingContext2D.prototype.isPointInStroke = patchedIsStroke;
       }
 
       if (targetWin.OffscreenCanvasRenderingContext2D && targetWin.OffscreenCanvasRenderingContext2D.prototype.isPointInPath) {
         const origOffIsPoint = targetWin.OffscreenCanvasRenderingContext2D.prototype.isPointInPath;
-        const patchedOffIsPoint = function(a, b, c, d) {
+        let patchedOffIsPoint = function(a, b, c, d) {
           if (typeof a === 'number' && typeof b === 'number') {
             return origOffIsPoint.call(this, a + pointJitter, b + pointJitter, c);
           } else if (a instanceof Path2D && typeof b === 'number' && typeof c === 'number') {
@@ -821,7 +872,7 @@
           }
           return origOffIsPoint.apply(this, arguments);
         };
-        makeNative(patchedOffIsPoint, 'isPointInPath');
+        patchedOffIsPoint = makeNative(patchedOffIsPoint, 'isPointInPath');
         targetWin.OffscreenCanvasRenderingContext2D.prototype.isPointInPath = patchedOffIsPoint;
       }
     } catch (e) {}
@@ -835,12 +886,12 @@
 
     if (descWin && descWin.get) {
       const origWinGet = descWin.get;
-      const patchedWinGet = function() {
+      let patchedWinGet = function() {
         const w = origWinGet.call(this);
         if (w) hookCanvasWindow(w);
         return w;
       };
-      makeNative(patchedWinGet, 'get contentWindow');
+      patchedWinGet = makeNative(patchedWinGet, 'get contentWindow');
       Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
         get: patchedWinGet,
         configurable: true,
@@ -850,12 +901,12 @@
 
     if (descDoc && descDoc.get) {
       const origDocGet = descDoc.get;
-      const patchedDocGet = function() {
+      let patchedDocGet = function() {
         const d = origDocGet.call(this);
         if (d && d.defaultView) hookCanvasWindow(d.defaultView);
         return d;
       };
-      makeNative(patchedDocGet, 'get contentDocument');
+      patchedDocGet = makeNative(patchedDocGet, 'get contentDocument');
       Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {
         get: patchedDocGet,
         configurable: true,
@@ -870,13 +921,13 @@
   try {
     const fontOffset = ((seedHash('font') % 100) - 50) * 0.0001; // Tiny offset e.g. -0.0050 to +0.0050
     const origMeasureText = CanvasRenderingContext2D.prototype.measureText;
-    const patchedMeasureText = function(text) {
+    let patchedMeasureText = function(text) {
       const metrics = origMeasureText.apply(this, arguments);
       try {
         if (metrics && typeof metrics.width === 'number') {
           const origW = metrics.width;
-          const getW = function() { return origW + fontOffset; };
-          makeNative(getW, 'get width');
+          let getW = function() { return origW + fontOffset; };
+          getW = makeNative(getW, 'get width');
           Object.defineProperty(metrics, 'width', {
             get: getW,
             configurable: true
@@ -885,7 +936,7 @@
       } catch (e) {}
       return metrics;
     };
-    makeNative(patchedMeasureText, 'measureText');
+    patchedMeasureText = makeNative(patchedMeasureText, 'measureText');
     CanvasRenderingContext2D.prototype.measureText = patchedMeasureText;
   } catch (e) {}
 
@@ -894,7 +945,7 @@
   // ==========================================
   try {
     const origGetChannelData = AudioBuffer.prototype.getChannelData;
-    const patchedGetChannelData = function() {
+    let patchedGetChannelData = function() {
       const results = origGetChannelData.apply(this, arguments);
       if (results && results.length) {
         let isSilent = true;
@@ -913,12 +964,12 @@
       }
       return results;
     };
-    makeNative(patchedGetChannelData, 'getChannelData');
+    patchedGetChannelData = makeNative(patchedGetChannelData, 'getChannelData');
     AudioBuffer.prototype.getChannelData = patchedGetChannelData;
 
     if (AudioBuffer.prototype.copyFromChannel) {
       const origCopy = AudioBuffer.prototype.copyFromChannel;
-      const patchedCopy = function(destination, channelNumber, startInChannel) {
+      let patchedCopy = function(destination, channelNumber, startInChannel) {
         origCopy.apply(this, arguments);
         if (destination && destination.length) {
           for (let i = 0; i < destination.length; i += 100) {
@@ -926,7 +977,7 @@
           }
         }
       };
-      makeNative(patchedCopy, 'copyFromChannel');
+      patchedCopy = makeNative(patchedCopy, 'copyFromChannel');
       AudioBuffer.prototype.copyFromChannel = patchedCopy;
     }
   } catch (e) {}
@@ -937,17 +988,21 @@
   if (window.SpeechSynthesis && window.SpeechSynthesis.prototype && window.SpeechSynthesis.prototype.getVoices) {
     try {
       const origGetVoices = window.SpeechSynthesis.prototype.getVoices;
-      const patchedGetVoices = function() {
+      let patchedGetVoices = function() {
         const voices = origGetVoices.apply(this, arguments);
         if (voices && voices.length > 0) return voices;
 
-        // Fallback realistic synthetic voice list if empty
-        return [
+        // Fallback realistic synthetic voice list if empty (inheriting SpeechSynthesisVoice.prototype)
+        const defaultVoices = [
           { name: 'Google US English', lang: 'en-US', default: true, localService: true, voiceURI: 'Google US English' },
           { name: 'Google UK English Female', lang: 'en-GB', default: false, localService: true, voiceURI: 'Google UK English Female' }
         ];
+        if (window.SpeechSynthesisVoice && window.SpeechSynthesisVoice.prototype) {
+          return defaultVoices.map(v => Object.assign(Object.create(window.SpeechSynthesisVoice.prototype), v));
+        }
+        return defaultVoices;
       };
-      makeNative(patchedGetVoices, 'getVoices');
+      patchedGetVoices = makeNative(patchedGetVoices, 'getVoices');
       window.SpeechSynthesis.prototype.getVoices = patchedGetVoices;
       if (window.speechSynthesis && window.speechSynthesis.hasOwnProperty('getVoices')) {
         delete window.speechSynthesis.getVoices;
@@ -978,10 +1033,10 @@
         [Symbol.toStringTag]: 'BatteryManager'
       };
 
-      const getBatteryFn = function() {
+      let getBatteryFn = function() {
         return Promise.resolve(mockBattery);
       };
-      makeNative(getBatteryFn, 'getBattery');
+      getBatteryFn = makeNative(getBatteryFn, 'getBattery');
 
       if (window.Navigator && window.Navigator.prototype) {
         Object.defineProperty(window.Navigator.prototype, 'getBattery', {
@@ -1093,16 +1148,16 @@
     const { pluginArr, mimeArr } = buildPluginsAndMimes();
 
     if (window.Navigator && window.Navigator.prototype) {
-      const getPlugins = function() { return pluginArr; };
-      makeNative(getPlugins, 'get plugins');
+      let getPlugins = function() { return pluginArr; };
+      getPlugins = makeNative(getPlugins, 'get plugins');
       Object.defineProperty(window.Navigator.prototype, 'plugins', {
         get: getPlugins,
         configurable: true,
         enumerable: true
       });
 
-      const getMimes = function() { return mimeArr; };
-      makeNative(getMimes, 'get mimeTypes');
+      let getMimes = function() { return mimeArr; };
+      getMimes = makeNative(getMimes, 'get mimeTypes');
       Object.defineProperty(window.Navigator.prototype, 'mimeTypes', {
         get: getMimes,
         configurable: true,
@@ -1120,7 +1175,7 @@
     if (window.Permissions && window.Permissions.prototype && window.Permissions.prototype.query) {
       try {
         const origPermQuery = window.Permissions.prototype.query;
-        const patchedPermQuery = function(parameters) {
+        let patchedPermQuery = function(parameters) {
           if (parameters && parameters.name === 'notifications') {
             const notifPerm = (window.Notification && window.Notification.permission) || 'default';
             const notifState = (notifPerm === 'granted') ? 'granted' : ((notifPerm === 'denied') ? 'denied' : 'prompt');
@@ -1140,7 +1195,7 @@
           }
           return origPermQuery.apply(this, arguments);
         };
-        makeNative(patchedPermQuery, 'query');
+        patchedPermQuery = makeNative(patchedPermQuery, 'query');
         window.Permissions.prototype.query = patchedPermQuery;
         if (navigator.permissions && navigator.permissions.hasOwnProperty('query')) {
           delete navigator.permissions.query;
@@ -1151,8 +1206,8 @@
     // Notification.permission & requestPermission alignment (non-enumerable matching native V8)
     if (typeof window !== 'undefined' && window.Notification) {
       try {
-        const getNotifPerm = function() { return 'default'; };
-        makeNative(getNotifPerm, 'get permission');
+        let getNotifPerm = function() { return 'default'; };
+        getNotifPerm = makeNative(getNotifPerm, 'get permission');
         Object.defineProperty(window.Notification, 'permission', {
           get: getNotifPerm,
           configurable: true,
@@ -1160,14 +1215,14 @@
         });
 
         if (window.Notification.requestPermission) {
-          const patchedReqPerm = function(callback) {
+          let patchedReqPerm = function(callback) {
             const res = Promise.resolve('default');
             if (typeof callback === 'function') {
               try { callback('default'); } catch(e) {}
             }
             return res;
           };
-          makeNative(patchedReqPerm, 'requestPermission');
+          patchedReqPerm = makeNative(patchedReqPerm, 'requestPermission');
           window.Notification.requestPermission = patchedReqPerm;
         }
       } catch (e) {}
@@ -1195,7 +1250,7 @@
     }
 
     const origReadPixels = WebGLRenderingContext.prototype.readPixels;
-    const patchedReadPixels = function() {
+    let patchedReadPixels = function() {
       const res = origReadPixels.apply(this, arguments);
       try {
         const pixels = arguments[6];
@@ -1203,12 +1258,12 @@
       } catch (e) {}
       return res;
     };
-    makeNative(patchedReadPixels, 'readPixels');
+    patchedReadPixels = makeNative(patchedReadPixels, 'readPixels');
     WebGLRenderingContext.prototype.readPixels = patchedReadPixels;
 
     if (window.WebGL2RenderingContext) {
       const origReadPixels2 = WebGL2RenderingContext.prototype.readPixels;
-      const patchedReadPixels2 = function() {
+      let patchedReadPixels2 = function() {
         const res = origReadPixels2.apply(this, arguments);
         try {
           const pixels = arguments[6];
@@ -1216,7 +1271,7 @@
         } catch (e) {}
         return res;
       };
-      makeNative(patchedReadPixels2, 'readPixels');
+      patchedReadPixels2 = makeNative(patchedReadPixels2, 'readPixels');
       WebGL2RenderingContext.prototype.readPixels = patchedReadPixels2;
     }
   } catch (e) {}
@@ -1252,7 +1307,7 @@
     for (const ctor of intlConstructors) {
       if (ctor && ctor.prototype && ctor.prototype.resolvedOptions) {
         const origRes = ctor.prototype.resolvedOptions;
-        const patchedRes = function() {
+        let patchedRes = function() {
           const res = origRes.apply(this, arguments);
           if (res) {
             if (targetLoc) res.locale = targetLoc;
@@ -1266,7 +1321,7 @@
           }
           return res;
         };
-        makeNative(patchedRes, 'resolvedOptions');
+        patchedRes = makeNative(patchedRes, 'resolvedOptions');
         ctor.prototype.resolvedOptions = patchedRes;
       }
     }
@@ -1276,7 +1331,7 @@
     try {
       const targetTz = cfg.timezone.trim();
       const origGetTimezoneOffset = Date.prototype.getTimezoneOffset;
-      const patchedGetTimezoneOffset = function() {
+      let patchedGetTimezoneOffset = function() {
         try {
           const utc = new Date(this.toLocaleString('en-US', { timeZone: 'UTC' }));
           const target = new Date(this.toLocaleString('en-US', { timeZone: targetTz }));
@@ -1285,7 +1340,7 @@
         } catch(e) {}
         return origGetTimezoneOffset.apply(this, arguments);
       };
-      makeNative(patchedGetTimezoneOffset, 'getTimezoneOffset');
+      patchedGetTimezoneOffset = makeNative(patchedGetTimezoneOffset, 'getTimezoneOffset');
       Date.prototype.getTimezoneOffset = patchedGetTimezoneOffset;
     } catch (e) {}
   }
@@ -1295,12 +1350,12 @@
       const userLang = cfg.locale || 'en-US';
       const userLangs = cfg.acceptLanguage ? cfg.acceptLanguage.split(',').map(l => l.split(';')[0].trim()) : [userLang, 'en'];
       
-      const getLang = function() { return userLang; };
-      makeNative(getLang, 'get language');
+      let getLang = function() { return userLang; };
+      getLang = makeNative(getLang, 'get language');
       Object.defineProperty(Navigator.prototype, 'language', { get: getLang, configurable: true, enumerable: true });
 
-      const getLangs = function() { return Object.freeze(userLangs); };
-      makeNative(getLangs, 'get languages');
+      let getLangs = function() { return Object.freeze(userLangs); };
+      getLangs = makeNative(getLangs, 'get languages');
       Object.defineProperty(Navigator.prototype, 'languages', { get: getLangs, configurable: true, enumerable: true });
 
       if (navigator.hasOwnProperty('language')) delete navigator.language;
@@ -1335,21 +1390,21 @@
         const WebRTCProxy = function(config, constraints) {
           const pc = new origRTC(config, constraints);
           const origCreateOffer = pc.createOffer;
-          const patchedCreateOffer = async function() {
+          let patchedCreateOffer = async function() {
             const offer = await origCreateOffer.apply(this, arguments);
             if (offer && offer.sdp) offer.sdp = filterSdp(offer.sdp);
             return offer;
           };
-          makeNative(patchedCreateOffer, 'createOffer');
+          patchedCreateOffer = makeNative(patchedCreateOffer, 'createOffer');
           pc.createOffer = patchedCreateOffer;
 
           const origCreateAnswer = pc.createAnswer;
-          const patchedCreateAnswer = async function() {
+          let patchedCreateAnswer = async function() {
             const answer = await origCreateAnswer.apply(this, arguments);
             if (answer && answer.sdp) answer.sdp = filterSdp(answer.sdp);
             return answer;
           };
-          makeNative(patchedCreateAnswer, 'createAnswer');
+          patchedCreateAnswer = makeNative(patchedCreateAnswer, 'createAnswer');
           pc.createAnswer = patchedCreateAnswer;
 
           const origAddEventListener = pc.addEventListener;
@@ -1367,12 +1422,12 @@
             }
             return origAddEventListener.apply(this, arguments);
           };
-          makeNative(pc.addEventListener, 'addEventListener');
+          pc.addEventListener = makeNative(pc.addEventListener, 'addEventListener');
 
           return pc;
         };
         WebRTCProxy.prototype = origRTC.prototype;
-        makeNative(WebRTCProxy, 'RTCPeerConnection');
+        WebRTCProxy = makeNative(WebRTCProxy, 'RTCPeerConnection');
         window.RTCPeerConnection = WebRTCProxy;
         window.webkitRTCPeerConnection = WebRTCProxy;
       }
@@ -1449,7 +1504,7 @@
     const fontTarget = (window.FontFaceSet && window.FontFaceSet.prototype) ? window.FontFaceSet.prototype : (document.fonts || {});
     if (fontTarget && fontTarget.check) {
       const origCheck = fontTarget.check;
-      const hookedCheck = function(fontStr, text) {
+      let hookedCheck = function(fontStr, text) {
         if (fontStr) {
           const fontClean = cleanFontName(fontStr);
           if (isAppleOS || isLinuxOS) {
@@ -1465,7 +1520,7 @@
           return false;
         }
       };
-      makeNative(hookedCheck, 'check');
+      hookedCheck = makeNative(hookedCheck, 'check');
       fontTarget.check = hookedCheck;
       if (document.fonts) document.fonts.check = hookedCheck;
     }
@@ -1482,7 +1537,7 @@
         let fallbackW = null;
         let fallbackH = null;
 
-        const patchedOffsetW = function() {
+        let patchedOffsetW = function() {
           const val = origOffsetW.call(this);
           if (val === 0) return val;
 
@@ -1503,14 +1558,14 @@
           }
           return val;
         };
-        makeNative(patchedOffsetW, 'get offsetWidth');
+        patchedOffsetW = makeNative(patchedOffsetW, 'get offsetWidth');
         Object.defineProperty(window.HTMLElement.prototype, 'offsetWidth', {
           get: patchedOffsetW,
           enumerable: true,
           configurable: true
         });
 
-        const patchedOffsetH = function() {
+        let patchedOffsetH = function() {
           const val = origOffsetH.call(this);
           if (val === 0) return val;
 
@@ -1531,7 +1586,7 @@
           }
           return val;
         };
-        makeNative(patchedOffsetH, 'get offsetHeight');
+        patchedOffsetH = makeNative(patchedOffsetH, 'get offsetHeight');
         Object.defineProperty(window.HTMLElement.prototype, 'offsetHeight', {
           get: patchedOffsetH,
           enumerable: true,
@@ -1543,7 +1598,7 @@
     // 3. getBoundingClientRect Hook for rect-based font probes
     if (window.Element && window.Element.prototype) {
       const origGetBCR = window.Element.prototype.getBoundingClientRect;
-      const patchedGetBCR = function() {
+      let patchedGetBCR = function() {
         const r = origGetBCR.call(this);
         if (isFontProbeElement(this)) {
           const nw = getFontNoise(this, 'w');
@@ -1552,7 +1607,7 @@
         }
         return r;
       };
-      makeNative(patchedGetBCR, 'getBoundingClientRect');
+      patchedGetBCR = makeNative(patchedGetBCR, 'getBoundingClientRect');
       window.Element.prototype.getBoundingClientRect = patchedGetBCR;
     }
   } catch (e) {}
@@ -1564,7 +1619,7 @@
     if (window.OfflineAudioContext || window.webkitOfflineAudioContext) {
       const AudioCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
       const origStartRendering = AudioCtx.prototype.startRendering;
-      const patchedStartRendering = async function() {
+      let patchedStartRendering = async function() {
         const buffer = await origStartRendering.apply(this, arguments);
         if (buffer) {
           for (let c = 0; c < buffer.numberOfChannels; c++) {
@@ -1576,12 +1631,12 @@
         }
         return buffer;
       };
-      makeNative(patchedStartRendering, 'startRendering');
+      patchedStartRendering = makeNative(patchedStartRendering, 'startRendering');
       AudioCtx.prototype.startRendering = patchedStartRendering;
     }
     if (window.AnalyserNode) {
       const origGetFloatFreq = AnalyserNode.prototype.getFloatFrequencyData;
-      const patchedGetFloatFreq = function(array) {
+      let patchedGetFloatFreq = function(array) {
         origGetFloatFreq.apply(this, arguments);
         if (array && array.length) {
           for (let i = 0; i < array.length; i += 50) {
@@ -1589,11 +1644,11 @@
           }
         }
       };
-      makeNative(patchedGetFloatFreq, 'getFloatFrequencyData');
+      patchedGetFloatFreq = makeNative(patchedGetFloatFreq, 'getFloatFrequencyData');
       AnalyserNode.prototype.getFloatFrequencyData = patchedGetFloatFreq;
 
       const origGetByteFreq = AnalyserNode.prototype.getByteFrequencyData;
-      const patchedGetByteFreq = function(array) {
+      let patchedGetByteFreq = function(array) {
         origGetByteFreq.apply(this, arguments);
         if (array && array.length) {
           const delta = (seedHash('bytefreq') % 3) - 1;
@@ -1604,11 +1659,11 @@
           }
         }
       };
-      makeNative(patchedGetByteFreq, 'getByteFrequencyData');
+      patchedGetByteFreq = makeNative(patchedGetByteFreq, 'getByteFrequencyData');
       AnalyserNode.prototype.getByteFrequencyData = patchedGetByteFreq;
 
       const origGetByteTime = AnalyserNode.prototype.getByteTimeDomainData;
-      const patchedGetByteTime = function(array) {
+      let patchedGetByteTime = function(array) {
         origGetByteTime.apply(this, arguments);
         if (array && array.length) {
           const delta = (seedHash('bytetimed') % 3) - 1;
@@ -1619,7 +1674,7 @@
           }
         }
       };
-      makeNative(patchedGetByteTime, 'getByteTimeDomainData');
+      patchedGetByteTime = makeNative(patchedGetByteTime, 'getByteTimeDomainData');
       AnalyserNode.prototype.getByteTimeDomainData = patchedGetByteTime;
     }
   } catch (e) {}
@@ -1630,7 +1685,7 @@
   try {
     if (window.URL && window.URL.createObjectURL) {
       const origCreateObjectURL = window.URL.createObjectURL;
-      const patchedCreateObjectURL = function(obj) {
+      let patchedCreateObjectURL = function(obj) {
         try {
           if (obj instanceof Blob && obj.type && (obj.type === 'application/javascript' || obj.type === 'text/javascript')) {
             const shim = `try {
@@ -1657,7 +1712,7 @@
         } catch(e) {}
         return origCreateObjectURL.apply(this, arguments);
       };
-      makeNative(patchedCreateObjectURL, 'createObjectURL');
+      patchedCreateObjectURL = makeNative(patchedCreateObjectURL, 'createObjectURL');
       window.URL.createObjectURL = patchedCreateObjectURL;
     }
   } catch(e) {}
@@ -1667,7 +1722,7 @@
   try {
     if (navigator.gpu && navigator.gpu.requestAdapter) {
       const origRequestAdapter = navigator.gpu.requestAdapter;
-      const patchedRequestAdapter = async function(options) {
+      let patchedRequestAdapter = async function(options) {
         const adapter = await origRequestAdapter.apply(this, arguments);
         if (!adapter) return adapter;
 
@@ -1685,14 +1740,14 @@
 
         if (window.GPUAdapter && window.GPUAdapter.prototype) {
           if (window.GPUAdapter.prototype.requestAdapterInfo) {
-            const patchedReqInfo = async function() { return fakeInfo; };
-            makeNative(patchedReqInfo, 'requestAdapterInfo');
+            let patchedReqInfo = async function() { return fakeInfo; };
+            patchedReqInfo = makeNative(patchedReqInfo, 'requestAdapterInfo');
             window.GPUAdapter.prototype.requestAdapterInfo = patchedReqInfo;
           }
           if ('info' in window.GPUAdapter.prototype) {
             try {
-              const getInfo = function() { return fakeInfo; };
-              makeNative(getInfo, 'get info');
+              let getInfo = function() { return fakeInfo; };
+              getInfo = makeNative(getInfo, 'get info');
               Object.defineProperty(window.GPUAdapter.prototype, 'info', {
                 get: getInfo,
                 configurable: true,
@@ -1703,7 +1758,7 @@
         }
         return adapter;
       };
-      makeNative(patchedRequestAdapter, 'requestAdapter');
+      patchedRequestAdapter = makeNative(patchedRequestAdapter, 'requestAdapter');
       navigator.gpu.requestAdapter = patchedRequestAdapter;
     }
   } catch(e) {}
@@ -1727,7 +1782,7 @@
         };
       }
       if (!window.chrome.csi) {
-        const csiFn = function() {
+        let csiFn = function() {
           return {
             startE: Math.floor(performance.timeOrigin || (performance.timing ? performance.timing.navigationStart : Date.now())),
             onloadT: Math.floor((performance.timing ? performance.timing.loadEventEnd : Date.now())),
@@ -1735,11 +1790,11 @@
             tran: 15
           };
         };
-        makeNative(csiFn, 'csi');
+        csiFn = makeNative(csiFn, 'csi');
         window.chrome.csi = csiFn;
       }
       if (!window.chrome.loadTimes) {
-        const loadTimesFn = function() {
+        let loadTimesFn = function() {
           const t = performance.timing || {};
           const origin = performance.timeOrigin || t.navigationStart || Date.now();
           return {
@@ -1758,7 +1813,7 @@
             connectionInfo: 'h2'
           };
         };
-        makeNative(loadTimesFn, 'loadTimes');
+        loadTimesFn = makeNative(loadTimesFn, 'loadTimes');
         window.chrome.loadTimes = loadTimesFn;
       }
     }
@@ -1771,14 +1826,14 @@
     const descStack = Object.getOwnPropertyDescriptor(Error.prototype, 'stack');
     if (descStack && descStack.get) {
       const origStackGet = descStack.get;
-      const patchedStackGet = function() {
+      let patchedStackGet = function() {
         const s = origStackGet.call(this);
         if (typeof s === 'string') {
           return s.split('\n').filter(l => !l.includes('inject.js') && !l.includes('config.js')).join('\n');
         }
         return s;
       };
-      makeNative(patchedStackGet, 'get stack');
+      patchedStackGet = makeNative(patchedStackGet, 'get stack');
       Object.defineProperty(Error.prototype, 'stack', {
         get: patchedStackGet,
         set: descStack.set,
@@ -1802,31 +1857,31 @@
 
       if (Performance.prototype.getEntries) {
         const origGetEntries = Performance.prototype.getEntries;
-        const patchedGetEntries = function() {
+        let patchedGetEntries = function() {
           return sanitizePerfEntries(origGetEntries.apply(this, arguments));
         };
-        makeNative(patchedGetEntries, 'getEntries');
+        patchedGetEntries = makeNative(patchedGetEntries, 'getEntries');
         Performance.prototype.getEntries = patchedGetEntries;
       }
 
       if (Performance.prototype.getEntriesByType) {
         const origGetEntriesByType = Performance.prototype.getEntriesByType;
-        const patchedGetEntriesByType = function(type) {
+        let patchedGetEntriesByType = function(type) {
           return sanitizePerfEntries(origGetEntriesByType.apply(this, arguments));
         };
-        makeNative(patchedGetEntriesByType, 'getEntriesByType');
+        patchedGetEntriesByType = makeNative(patchedGetEntriesByType, 'getEntriesByType');
         Performance.prototype.getEntriesByType = patchedGetEntriesByType;
       }
 
       if (Performance.prototype.getEntriesByName) {
         const origGetEntriesByName = Performance.prototype.getEntriesByName;
-        const patchedGetEntriesByName = function(name, type) {
+        let patchedGetEntriesByName = function(name, type) {
           if (typeof name === 'string' && (name.includes('inject.js') || name.includes('config.js'))) {
             return [];
           }
           return sanitizePerfEntries(origGetEntriesByName.apply(this, arguments));
         };
-        makeNative(patchedGetEntriesByName, 'getEntriesByName');
+        patchedGetEntriesByName = makeNative(patchedGetEntriesByName, 'getEntriesByName');
         Performance.prototype.getEntriesByName = patchedGetEntriesByName;
       }
     }
@@ -1852,8 +1907,8 @@
       if (window.NetworkInformation && window.NetworkInformation.prototype) {
         Object.setPrototypeOf(netInfo, window.NetworkInformation.prototype);
         const defNetGetter = (p, v) => {
-          const g = function() { return v; };
-          makeNative(g, `get ${p}`);
+          let g = function() { return v; };
+          g = makeNative(g, `get ${p}`);
           try {
             Object.defineProperty(window.NetworkInformation.prototype, p, {
               get: g,
@@ -1869,8 +1924,8 @@
       }
 
       if (window.Navigator && window.Navigator.prototype) {
-        const getConn = function() { return netInfo; };
-        makeNative(getConn, 'get connection');
+        let getConn = function() { return netInfo; };
+        getConn = makeNative(getConn, 'get connection');
         Object.defineProperty(window.Navigator.prototype, 'connection', {
           get: getConn,
           configurable: true,
@@ -1901,10 +1956,10 @@
         ['Backquote', '`'], ['Semicolon', ';'], ['Quote', "'"], ['Comma', ','],
         ['Period', '.'], ['Slash', '/'], ['Backslash', '\\']
       ]);
-      const patchedGetLayoutMap = async function() {
+      let patchedGetLayoutMap = async function() {
         return qwertyMap;
       };
-      makeNative(patchedGetLayoutMap, 'getLayoutMap');
+      patchedGetLayoutMap = makeNative(patchedGetLayoutMap, 'getLayoutMap');
       if (window.Keyboard && window.Keyboard.prototype) {
         window.Keyboard.prototype.getLayoutMap = patchedGetLayoutMap;
       } else {

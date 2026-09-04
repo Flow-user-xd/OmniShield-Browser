@@ -264,27 +264,44 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
     # Build the CDP injection payload (serves as a secondary reinforcement of extension injection)
     cdp_payload = f"""
     (function() {{
-      // Anti-Detection: Native Function.prototype.toString disguise
+      // Anti-Detection: Native Function.prototype.toString disguise (Akamai & CreepJS Spec)
       const nativeFnToString = Function.prototype.toString;
       const nativeMap = new WeakMap();
 
-      function makeNative(fn, name) {{
+      function makeNative(fn, name, isConstructor = false) {{
+        const cleanName = name || fn.name || '';
         if (name) {{
           try {{ Object.defineProperty(fn, 'name', {{ value: name, configurable: true }}); }} catch(e) {{}}
         }}
-        nativeMap.set(fn, name || (fn.name || ''));
-        return fn;
+        if (isConstructor || (fn.prototype && typeof fn.prototype === 'object' && fn.prototype.constructor === fn && Object.keys(fn.prototype).length > 0)) {{
+          nativeMap.set(fn, cleanName);
+          return fn;
+        }}
+        const wrapper = {{
+          [cleanName](...args) {{
+            return fn.apply(this, args);
+          }}
+        }}[cleanName];
+        try {{ Object.defineProperty(wrapper, 'length', {{ value: fn.length, configurable: true }}); }} catch(e) {{}}
+        nativeMap.set(wrapper, cleanName);
+        nativeMap.set(fn, cleanName);
+        return wrapper;
       }}
 
       try {{
-        const patchedToString = function() {{
-          if (nativeMap.has(this)) {{
-            const n = nativeMap.get(this);
-            return `function ${{n}}() {{ [native code] }}`;
+        const patchedToString = {{
+          toString() {{
+            if (typeof this !== 'function') {{
+              return nativeFnToString.call(this);
+            }}
+            if (nativeMap.has(this)) {{
+              const n = nativeMap.get(this);
+              return `function ${{n}}() {{ [native code] }}`;
+            }}
+            return nativeFnToString.call(this);
           }}
-          return nativeFnToString.call(this);
-        }};
-        makeNative(patchedToString, 'toString');
+        }}.toString;
+        nativeMap.set(patchedToString, 'toString');
         Function.prototype.toString = patchedToString;
       }} catch(e) {{}}
 
@@ -293,8 +310,8 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         const targetW = {int(width)};
         const targetH = {int(height)};
         function makeScreenGetter(prop, val) {{
-          const g = function() {{ return val; }};
-          makeNative(g, `get ${{prop}}`);
+          let g = function() {{ return val; }};
+          g = makeNative(g, `get ${{prop}}`);
           return {{ get: g, configurable: true, enumerable: true }};
         }}
 
@@ -312,24 +329,24 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           try {{ Object.defineProperties(Screen.prototype, screenDescriptors); }} catch(e) {{}}
         }}
         try {{
-          const getDpr = function() {{ return {target_dpr}; }};
-          makeNative(getDpr, 'get devicePixelRatio');
+          let getDpr = function() {{ return {target_dpr}; }};
+          getDpr = makeNative(getDpr, 'get devicePixelRatio');
           Object.defineProperty(window, 'devicePixelRatio', {{ get: getDpr, configurable: true }});
 
-          const getOuterW = function() {{ return targetW; }};
-          makeNative(getOuterW, 'get outerWidth');
+          let getOuterW = function() {{ return targetW; }};
+          getOuterW = makeNative(getOuterW, 'get outerWidth');
           Object.defineProperty(window, 'outerWidth', {{ get: getOuterW, configurable: true }});
 
-          const getOuterH = function() {{ return targetH - 40; }};
-          makeNative(getOuterH, 'get outerHeight');
+          let getOuterH = function() {{ return targetH - 40; }};
+          getOuterH = makeNative(getOuterH, 'get outerHeight');
           Object.defineProperty(window, 'outerHeight', {{ get: getOuterH, configurable: true }});
 
-          const getInnerW = function() {{ return targetW; }};
-          makeNative(getInnerW, 'get innerWidth');
+          let getInnerW = function() {{ return targetW; }};
+          getInnerW = makeNative(getInnerW, 'get innerWidth');
           Object.defineProperty(window, 'innerWidth', {{ get: getInnerW, configurable: true }});
 
-          const getInnerH = function() {{ return targetH - 85; }};
-          makeNative(getInnerH, 'get innerHeight');
+          let getInnerH = function() {{ return targetH - 85; }};
+          getInnerH = makeNative(getInnerH, 'get innerHeight');
           Object.defineProperty(window, 'innerHeight', {{ get: getInnerH, configurable: true }});
         }} catch(e) {{}}
       }} catch(e) {{}}
@@ -352,7 +369,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         const wantsTouchProfile = {json.dumps('Android' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str)};
         if (wantsTouchProfile && window.matchMedia) {{
           const origMatchMedia = window.matchMedia.bind(window);
-          const patchedMM = function(query) {{
+          let patchedMM = function(query) {{
             const q = String(query).toLowerCase();
             const result = origMatchMedia(query);
             let forced = null;
@@ -371,7 +388,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }});
             }} catch(e) {{ return result; }}
           }};
-          makeNative(patchedMM, 'matchMedia');
+          patchedMM = makeNative(patchedMM, 'matchMedia');
           window.matchMedia = patchedMM;
         }}
       }} catch(e) {{}}
@@ -415,8 +432,8 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
         if (typeof Navigator !== 'undefined' && Navigator.prototype) {{
           function defProtoGetter(prop, val) {{
-            const getter = function() {{ return val; }};
-            makeNative(getter, `get ${{prop}}`);
+            let getter = function() {{ return val; }};
+            getter = makeNative(getter, `get ${{prop}}`);
             try {{
               Object.defineProperty(Navigator.prototype, prop, {{
                 get: getter,
@@ -429,7 +446,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
           defProtoGetter('platform', platStr);
           defProtoGetter('hardwareConcurrency', {int(cpu_cores)});
-          defProtoGetter('deviceMemory', {int(memory_gb)});
+          defProtoGetter('deviceMemory', {8 if int(memory_gb) >= 8 else (4 if int(memory_gb) >= 4 else (2 if int(memory_gb) >= 2 else 1))});
           defProtoGetter('language', {json.dumps(user_lang)});
           defProtoGetter('languages', Object.freeze({json.dumps(user_langs)}));
           defProtoGetter('userAgent', {json.dumps(ua_str)});
@@ -596,8 +613,8 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               dispatchEvent: makeNative(function() {{ return true; }}, 'dispatchEvent'),
               [Symbol.toStringTag]: 'BatteryManager'
             }};
-            const getBatteryFn = function() {{ return Promise.resolve(mockBattery); }};
-            makeNative(getBatteryFn, 'getBattery');
+            let getBatteryFn = function() {{ return Promise.resolve(mockBattery); }};
+            getBatteryFn = makeNative(getBatteryFn, 'getBattery');
             try {{
               Object.defineProperty(Navigator.prototype, 'getBattery', {{
                 value: getBatteryFn,
@@ -624,10 +641,10 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             {{ deviceId: 'audio-out-1', kind: 'audiooutput', label: speakerLabel, groupId: 'group-1' }},
             {{ deviceId: 'video-in-1', kind: 'videoinput', label: camLabel, groupId: 'group-cam' }}
           ];
-          const patchedEnumerate = async function() {{
+          let patchedEnumerate = async function() {{
             return fakeDevs.map(d => Object.assign(Object.create(window.MediaDeviceInfo ? window.MediaDeviceInfo.prototype : Object.prototype), d));
           }};
-          makeNative(patchedEnumerate, 'enumerateDevices');
+          patchedEnumerate = makeNative(patchedEnumerate, 'enumerateDevices');
           navigator.mediaDevices.enumerateDevices = patchedEnumerate;
         }}
       }} catch(e) {{}}
@@ -639,24 +656,24 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         const isApple = vendor.includes('Apple') || renderer.includes('Apple');
         const isMobileGPU = {json.dumps('Android' in ua_str or 'iPhone' in ua_str or 'iPad' in ua_str)};
         const getParam = WebGLRenderingContext.prototype.getParameter;
-        const patchedGetParam = function(param) {{
+        let patchedGetParam = function(param) {{
           const res = getParam.apply(this, arguments);
           if (param === 37445) return vendor;
           if (param === 37446) return renderer;
           return res;
         }};
-        makeNative(patchedGetParam, 'getParameter');
+        patchedGetParam = makeNative(patchedGetParam, 'getParameter');
         WebGLRenderingContext.prototype.getParameter = patchedGetParam;
 
         if (window.WebGL2RenderingContext) {{
           const getParam2 = WebGL2RenderingContext.prototype.getParameter;
-          const patchedGetParam2 = function(param) {{
+          let patchedGetParam2 = function(param) {{
             const res = getParam2.apply(this, arguments);
             if (param === 37445) return vendor;
             if (param === 37446) return renderer;
             return res;
           }};
-          makeNative(patchedGetParam2, 'getParameter');
+          patchedGetParam2 = makeNative(patchedGetParam2, 'getParameter');
           WebGL2RenderingContext.prototype.getParameter = patchedGetParam2;
         }}
 
@@ -667,23 +684,23 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           const origGetSupported = proto.getSupportedExtensions;
           const origGetExtension = proto.getExtension;
           if (origGetSupported) {{
-            const patchedGetSupported = function () {{
+            let patchedGetSupported = function () {{
               let list = origGetSupported.apply(this, arguments) || [];
               list = isMobileGPU
                 ? list.filter((e) => !DESKTOP_ONLY_EXT.includes(e))
                 : list.filter((e) => !MOBILE_ONLY_EXT.includes(e));
               return list;
             }};
-            makeNative(patchedGetSupported, 'getSupportedExtensions');
+            patchedGetSupported = makeNative(patchedGetSupported, 'getSupportedExtensions');
             proto.getSupportedExtensions = patchedGetSupported;
           }}
           if (origGetExtension) {{
-            const patchedGetExtension = function (name) {{
+            let patchedGetExtension = function (name) {{
               if (isMobileGPU && DESKTOP_ONLY_EXT.includes(name)) return null;
               if (!isMobileGPU && MOBILE_ONLY_EXT.includes(name)) return null;
               return origGetExtension.apply(this, arguments);
             }};
-            makeNative(patchedGetExtension, 'getExtension');
+            patchedGetExtension = makeNative(patchedGetExtension, 'getExtension');
             proto.getExtension = patchedGetExtension;
           }}
         }};
@@ -715,7 +732,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
         // WebGL readPixels hook
         const origReadPixels = WebGLRenderingContext.prototype.readPixels;
-        const patchedReadPixels = function() {{
+        let patchedReadPixels = function() {{
           const res = origReadPixels.apply(this, arguments);
           try {{
             const pixels = arguments[6];
@@ -723,7 +740,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           }} catch(e) {{}}
           return res;
         }};
-        makeNative(patchedReadPixels, 'readPixels');
+        patchedReadPixels = makeNative(patchedReadPixels, 'readPixels');
         WebGLRenderingContext.prototype.readPixels = patchedReadPixels;
         if (window.WebGL2RenderingContext) {{
           WebGL2RenderingContext.prototype.readPixels = patchedReadPixels;
@@ -743,14 +760,14 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             const canvasContextMap = new WeakMap();
             if (targetWin.HTMLCanvasElement.prototype.getContext) {{
               const origGetCtx = targetWin.HTMLCanvasElement.prototype.getContext;
-              const patchedGetCtx = function(type) {{
+              let patchedGetCtx = function(type) {{
                 const res = origGetCtx.apply(this, arguments);
                 if (res && typeof type === 'string') {{
                   canvasContextMap.set(this, type.toLowerCase());
                 }}
                 return res;
               }};
-              makeNative(patchedGetCtx, 'getContext');
+              patchedGetCtx = makeNative(patchedGetCtx, 'getContext');
               targetWin.HTMLCanvasElement.prototype.getContext = patchedGetCtx;
             }}
 
@@ -769,7 +786,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               return true;
             }}
 
-            const patchedToDataURL = function() {{
+            let patchedToDataURL = function() {{
               if (!isFingerprintCanvas(this, this.width, this.height)) {{
                 return origToDataURL.apply(this, arguments);
               }}
@@ -802,10 +819,10 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }} catch (err) {{}}
               return origToDataURL.apply(this, arguments);
             }};
-            makeNative(patchedToDataURL, 'toDataURL');
+            patchedToDataURL = makeNative(patchedToDataURL, 'toDataURL');
             targetWin.HTMLCanvasElement.prototype.toDataURL = patchedToDataURL;
 
-            const patchedGetImageData = function(x, y, w, h) {{
+            let patchedGetImageData = function(x, y, w, h) {{
               const res = origGetImageData.apply(this, arguments);
               const canvasEl = this.canvas;
               if (!isFingerprintCanvas(canvasEl, w, h)) {{
@@ -816,10 +833,10 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }} catch (e) {{}}
               return res;
             }};
-            makeNative(patchedGetImageData, 'getImageData');
+            patchedGetImageData = makeNative(patchedGetImageData, 'getImageData');
             targetWin.CanvasRenderingContext2D.prototype.getImageData = patchedGetImageData;
 
-            const patchedToBlob = function(callback, type, quality) {{
+            let patchedToBlob = function(callback, type, quality) {{
               if (!isFingerprintCanvas(this, this.width, this.height)) {{
                 return origToBlob.call(this, callback, type, quality);
               }}
@@ -852,13 +869,13 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }} catch (err) {{}}
               return origToBlob.call(this, callback, type, quality);
             }};
-            makeNative(patchedToBlob, 'toBlob');
+            patchedToBlob = makeNative(patchedToBlob, 'toBlob');
             targetWin.HTMLCanvasElement.prototype.toBlob = patchedToBlob;
 
             // OffscreenCanvas & OffscreenCanvasRenderingContext2D Hooking
             if (targetWin.OffscreenCanvas && targetWin.OffscreenCanvas.prototype.convertToBlob) {{
               const origConvertToBlob = targetWin.OffscreenCanvas.prototype.convertToBlob;
-              const patchedConvertToBlob = async function(options) {{
+              let patchedConvertToBlob = async function(options) {{
                 try {{
                   if (this.width >= 16 && this.height >= 16) {{
                     const ctxType = canvasContextMap.get(this);
@@ -886,20 +903,20 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 }} catch(e) {{}}
                 return origConvertToBlob.apply(this, arguments);
               }};
-              makeNative(patchedConvertToBlob, 'convertToBlob');
+              patchedConvertToBlob = makeNative(patchedConvertToBlob, 'convertToBlob');
               targetWin.OffscreenCanvas.prototype.convertToBlob = patchedConvertToBlob;
             }}
 
             if (targetWin.OffscreenCanvasRenderingContext2D && targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData) {{
               const origOffGetImageData = targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData;
-              const patchedOffGetImageData = function(x, y, w, h) {{
+              let patchedOffGetImageData = function(x, y, w, h) {{
                 const res = origOffGetImageData.apply(this, arguments);
                 try {{
                   if (res && res.data && w >= 16 && h >= 16) applyPixelNoise(res.data);
                 }} catch(e) {{}}
                 return res;
               }};
-              makeNative(patchedOffGetImageData, 'getImageData');
+              patchedOffGetImageData = makeNative(patchedOffGetImageData, 'getImageData');
               targetWin.OffscreenCanvasRenderingContext2D.prototype.getImageData = patchedOffGetImageData;
             }}
           }} catch (e) {{}}
@@ -913,12 +930,12 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
           if (descWin && descWin.get) {{
             const origWinGet = descWin.get;
-            const patchedWinGet = function() {{
+            let patchedWinGet = function() {{
               const w = origWinGet.call(this);
               if (w) hookCanvasWindow(w);
               return w;
             }};
-            makeNative(patchedWinGet, 'get contentWindow');
+            patchedWinGet = makeNative(patchedWinGet, 'get contentWindow');
             Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {{
               get: patchedWinGet,
               configurable: true,
@@ -928,12 +945,12 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
           if (descDoc && descDoc.get) {{
             const origDocGet = descDoc.get;
-            const patchedDocGet = function() {{
+            let patchedDocGet = function() {{
               const d = origDocGet.call(this);
               if (d && d.defaultView) hookCanvasWindow(d.defaultView);
               return d;
             }};
-            makeNative(patchedDocGet, 'get contentDocument');
+            patchedDocGet = makeNative(patchedDocGet, 'get contentDocument');
             Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {{
               get: patchedDocGet,
               configurable: true,
@@ -942,16 +959,48 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           }}
         }} catch (e) {{}}
 
-        // Document focus alignment (prototype-only to prevent ownProperty detection)
+        // Document focus & visibility alignment (prototype-only to prevent ownProperty detection)
         try {{
-          if (typeof Document !== 'undefined' && Document.prototype && Document.prototype.hasFocus) {{
-            const origHasFocus = Document.prototype.hasFocus;
-            const patchedHasFocus = function() {{ return true; }};
-            makeNative(patchedHasFocus, 'hasFocus');
-            Document.prototype.hasFocus = patchedHasFocus;
+          if (typeof Document !== 'undefined' && Document.prototype) {{
+            if (Document.prototype.hasFocus) {{
+              Document.prototype.hasFocus = makeNative(function() {{ return true; }}, 'hasFocus');
+            }}
+            if ('hidden' in Document.prototype) {{
+              Object.defineProperty(Document.prototype, 'hidden', {{
+                get: makeNative(function() {{ return false; }}, 'get hidden'),
+                configurable: true,
+                enumerable: true
+              }});
+            }}
+            if ('visibilityState' in Document.prototype) {{
+              Object.defineProperty(Document.prototype, 'visibilityState', {{
+                get: makeNative(function() {{ return 'visible'; }}, 'get visibilityState'),
+                configurable: true,
+                enumerable: true
+              }});
+            }}
           }}
-          if (typeof document !== 'undefined' && document.hasOwnProperty('hasFocus')) {{
-            delete document.hasFocus;
+          if (typeof document !== 'undefined') {{
+            if (document.hasOwnProperty('hasFocus')) delete document.hasFocus;
+            if (document.hasOwnProperty('hidden')) delete document.hidden;
+            if (document.hasOwnProperty('visibilityState')) delete document.visibilityState;
+          }}
+        }} catch(e) {{}}
+
+        // Event isTrusted & Synthetic Event Disguise (Akamai Heuristic Defense)
+        try {{
+          if (typeof EventTarget !== 'undefined' && EventTarget.prototype.dispatchEvent) {{
+            const origDispatch = EventTarget.prototype.dispatchEvent;
+            let patchedDispatch = function(event) {{
+              if (event && !event.isTrusted) {{
+                try {{
+                  Object.defineProperty(event, 'isTrusted', {{ value: true, configurable: true }});
+                }} catch(e) {{}}
+              }}
+              return origDispatch.apply(this, arguments);
+            }};
+            patchedDispatch = makeNative(patchedDispatch, 'dispatchEvent');
+            EventTarget.prototype.dispatchEvent = patchedDispatch;
           }}
         }} catch(e) {{}}
 
@@ -959,7 +1008,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         if (window.Permissions && window.Permissions.prototype && window.Permissions.prototype.query) {{
           try {{
             const origPermQuery = window.Permissions.prototype.query;
-            const patchedPermQuery = function(parameters) {{
+            let patchedPermQuery = function(parameters) {{
               if (parameters && parameters.name === 'notifications') {{
                 const notifPerm = (window.Notification && window.Notification.permission) || 'default';
                 const notifState = (notifPerm === 'granted') ? 'granted' : ((notifPerm === 'denied') ? 'denied' : 'prompt');
@@ -979,7 +1028,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }}
               return origPermQuery.apply(this, arguments);
             }};
-            makeNative(patchedPermQuery, 'query');
+            patchedPermQuery = makeNative(patchedPermQuery, 'query');
             window.Permissions.prototype.query = patchedPermQuery;
             if (navigator.permissions && navigator.permissions.hasOwnProperty('query')) {{
               delete navigator.permissions.query;
@@ -990,8 +1039,8 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         // Notification permission alignment (non-enumerable matching native V8)
         try {{
           if (typeof window !== 'undefined' && window.Notification) {{
-            const getNotifPerm = function() {{ return 'default'; }};
-            makeNative(getNotifPerm, 'get permission');
+            let getNotifPerm = function() {{ return 'default'; }};
+            getNotifPerm = makeNative(getNotifPerm, 'get permission');
             Object.defineProperty(window.Notification, 'permission', {{
               get: getNotifPerm,
               configurable: true,
@@ -999,14 +1048,14 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             }});
 
             if (window.Notification.requestPermission) {{
-              const patchedReqPerm = function(callback) {{
+              let patchedReqPerm = function(callback) {{
                 const res = Promise.resolve('default');
                 if (typeof callback === 'function') {{
                   try {{ callback('default'); }} catch(e) {{}}
                 }}
                 return res;
               }};
-              makeNative(patchedReqPerm, 'requestPermission');
+              patchedReqPerm = makeNative(patchedReqPerm, 'requestPermission');
               window.Notification.requestPermission = patchedReqPerm;
             }}
           }}
@@ -1031,7 +1080,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           for (const ctor of intlConstructors) {{
             if (ctor && ctor.prototype && ctor.prototype.resolvedOptions) {{
               const origRes = ctor.prototype.resolvedOptions;
-              const patchedRes = function() {{
+              let patchedRes = function() {{
                 const r = origRes.apply(this, arguments);
                 if (r) {{
                   if (targetLoc && targetLoc.trim()) r.locale = targetLoc.trim();
@@ -1039,7 +1088,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                 }}
                 return r;
               }};
-              makeNative(patchedRes, 'resolvedOptions');
+              patchedRes = makeNative(patchedRes, 'resolvedOptions');
               ctor.prototype.resolvedOptions = patchedRes;
             }}
           }}
@@ -1050,7 +1099,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           try {{
             const targetTz = {json.dumps(timezone_id)}.trim();
             const origGetTimezoneOffset = Date.prototype.getTimezoneOffset;
-            const patchedGetTimezoneOffset = function() {{
+            let patchedGetTimezoneOffset = function() {{
               try {{
                 const utc = new Date(this.toLocaleString('en-US', {{ timeZone: 'UTC' }}));
                 const target = new Date(this.toLocaleString('en-US', {{ timeZone: targetTz }}));
@@ -1059,7 +1108,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }} catch(e) {{}}
               return origGetTimezoneOffset.apply(this, arguments);
             }};
-            makeNative(patchedGetTimezoneOffset, 'getTimezoneOffset');
+            patchedGetTimezoneOffset = makeNative(patchedGetTimezoneOffset, 'getTimezoneOffset');
             Date.prototype.getTimezoneOffset = patchedGetTimezoneOffset;
           }} catch(e) {{}}
         }}
@@ -1068,7 +1117,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
         try {{
           if (navigator.gpu && navigator.gpu.requestAdapter) {{
             const origRequestAdapter = navigator.gpu.requestAdapter;
-            const patchedRequestAdapter = async function(options) {{
+            let patchedRequestAdapter = async function(options) {{
               const adapter = await origRequestAdapter.apply(this, arguments);
               if (!adapter) return adapter;
 
@@ -1086,14 +1135,14 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
 
               if (window.GPUAdapter && window.GPUAdapter.prototype) {{
                 if (window.GPUAdapter.prototype.requestAdapterInfo) {{
-                  const patchedReqInfo = async function() {{ return fakeInfo; }};
-                  makeNative(patchedReqInfo, 'requestAdapterInfo');
+                  let patchedReqInfo = async function() {{ return fakeInfo; }};
+                  patchedReqInfo = makeNative(patchedReqInfo, 'requestAdapterInfo');
                   window.GPUAdapter.prototype.requestAdapterInfo = patchedReqInfo;
                 }}
                 if ('info' in window.GPUAdapter.prototype) {{
                   try {{
-                    const getInfo = function() {{ return fakeInfo; }};
-                    makeNative(getInfo, 'get info');
+                    let getInfo = function() {{ return fakeInfo; }};
+                    getInfo = makeNative(getInfo, 'get info');
                     Object.defineProperty(window.GPUAdapter.prototype, 'info', {{
                       get: getInfo,
                       configurable: true,
@@ -1104,7 +1153,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }}
               return adapter;
             }};
-            makeNative(patchedRequestAdapter, 'requestAdapter');
+            patchedRequestAdapter = makeNative(patchedRequestAdapter, 'requestAdapter');
             navigator.gpu.requestAdapter = patchedRequestAdapter;
           }}
         }} catch(e) {{}}
@@ -1124,7 +1173,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               }};
             }}
             if (!window.chrome.csi) {{
-              const csiFn = function() {{
+              let csiFn = function() {{
                 return {{
                   startE: Math.floor(performance.timeOrigin || (performance.timing ? performance.timing.navigationStart : Date.now())),
                   onloadT: Math.floor((performance.timing ? performance.timing.loadEventEnd : Date.now())),
@@ -1132,11 +1181,11 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                   tran: 15
                 }};
               }};
-              makeNative(csiFn, 'csi');
+              csiFn = makeNative(csiFn, 'csi');
               window.chrome.csi = csiFn;
             }}
             if (!window.chrome.loadTimes) {{
-              const loadTimesFn = function() {{
+              let loadTimesFn = function() {{
                 const t = performance.timing || {{}};
                 const origin = performance.timeOrigin || t.navigationStart || Date.now();
                 return {{
@@ -1155,7 +1204,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                   connectionInfo: 'h2'
                 }};
               }};
-              makeNative(loadTimesFn, 'loadTimes');
+              loadTimesFn = makeNative(loadTimesFn, 'loadTimes');
               window.chrome.loadTimes = loadTimesFn;
             }}
           }}
@@ -1166,14 +1215,14 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
           const descStack = Object.getOwnPropertyDescriptor(Error.prototype, 'stack');
           if (descStack && descStack.get) {{
             const origStackGet = descStack.get;
-            const patchedStackGet = function() {{
+            let patchedStackGet = function() {{
               const s = origStackGet.call(this);
               if (typeof s === 'string') {{
                 return s.split('\\n').filter(l => !l.includes('inject.js') && !l.includes('config.js')).join('\\n');
               }}
               return s;
             }};
-            makeNative(patchedStackGet, 'get stack');
+            patchedStackGet = makeNative(patchedStackGet, 'get stack');
             Object.defineProperty(Error.prototype, 'stack', {{
               get: patchedStackGet,
               set: descStack.set,
@@ -1194,23 +1243,23 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             }}
             if (Performance.prototype.getEntries) {{
               const origGet = Performance.prototype.getEntries;
-              const pGet = function() {{ return sanitizePerf(origGet.apply(this, arguments)); }};
-              makeNative(pGet, 'getEntries');
+              let pGet = function() {{ return sanitizePerf(origGet.apply(this, arguments)); }};
+              pGet = makeNative(pGet, 'getEntries');
               Performance.prototype.getEntries = pGet;
             }}
             if (Performance.prototype.getEntriesByType) {{
               const origGetT = Performance.prototype.getEntriesByType;
-              const pGetT = function(type) {{ return sanitizePerf(origGetT.apply(this, arguments)); }};
-              makeNative(pGetT, 'getEntriesByType');
+              let pGetT = function(type) {{ return sanitizePerf(origGetT.apply(this, arguments)); }};
+              pGetT = makeNative(pGetT, 'getEntriesByType');
               Performance.prototype.getEntriesByType = pGetT;
             }}
             if (Performance.prototype.getEntriesByName) {{
               const origGetN = Performance.prototype.getEntriesByName;
-              const pGetN = function(name, type) {{
+              let pGetN = function(name, type) {{
                 if (typeof name === 'string' && (name.includes('inject.js') || name.includes('config.js'))) return [];
                 return sanitizePerf(origGetN.apply(this, arguments));
               }};
-              makeNative(pGetN, 'getEntriesByName');
+              pGetN = makeNative(pGetN, 'getEntriesByName');
               Performance.prototype.getEntriesByName = pGetN;
             }}
           }}
@@ -1233,8 +1282,8 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
             if (window.NetworkInformation && window.NetworkInformation.prototype) {{
               Object.setPrototypeOf(netInfo, window.NetworkInformation.prototype);
               const defNetGetter = (p, v) => {{
-                const g = function() {{ return v; }};
-                makeNative(g, `get ${{p}}`);
+                let g = function() {{ return v; }};
+                g = makeNative(g, `get ${{p}}`);
                 try {{
                   Object.defineProperty(window.NetworkInformation.prototype, p, {{
                     get: g,
@@ -1249,8 +1298,8 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
               defNetGetter('saveData', false);
             }}
             if (window.Navigator && window.Navigator.prototype) {{
-              const getConn = function() {{ return netInfo; }};
-              makeNative(getConn, 'get connection');
+              let getConn = function() {{ return netInfo; }};
+              getConn = makeNative(getConn, 'get connection');
               Object.defineProperty(window.Navigator.prototype, 'connection', {{
                 get: getConn,
                 configurable: true,
