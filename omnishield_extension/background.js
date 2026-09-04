@@ -134,8 +134,10 @@ function isOmniboxSearchQuery(urlStr) {
     const parsed = new URL(urlStr);
     const host = parsed.hostname;
 
-    // 1. Never redirect localhost or local network IPs
-    if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.local') || host.endsWith('.internal')) {
+    // 1. Never redirect localhost, local network IPs, or local automation domains (.test, .example, etc.)
+    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '::1' ||
+        host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.test') ||
+        host.endsWith('.example') || host.endsWith('.invalid') || host.endsWith('.localhost')) {
       return { isSearch: false };
     }
     // IPv4 check

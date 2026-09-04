@@ -127,17 +127,15 @@
   // ==========================================
   try {
     if (navigator.hasOwnProperty('webdriver')) delete navigator.webdriver;
-    if (navigator.webdriver) {
-      if (window.Navigator && window.Navigator.prototype) {
-        const getWd = function() { return false; };
-        makeNative(getWd, 'get webdriver');
-        Object.defineProperty(window.Navigator.prototype, 'webdriver', {
-          get: getWd,
-          set: undefined,
-          configurable: true,
-          enumerable: true
-        });
-      }
+    if (window.Navigator && window.Navigator.prototype) {
+      const getWd = function() { return false; };
+      makeNative(getWd, 'get webdriver');
+      Object.defineProperty(window.Navigator.prototype, 'webdriver', {
+        get: getWd,
+        set: undefined,
+        configurable: true,
+        enumerable: true
+      });
     }
   } catch (e) {}
 
@@ -329,23 +327,25 @@
       try { Object.defineProperties(window.Screen.prototype, screenDescriptors); } catch (e) {}
     }
 
-    // Override inner/outer window dimensions and DPR on window
+    // Override inner/outer window dimensions and DPR on window (responsive to automation resizing)
     try {
-      const getOuterW = function() { return targetW; };
-      makeNative(getOuterW, 'get outerWidth');
-      Object.defineProperty(window, 'outerWidth', { get: getOuterW, configurable: true });
+      if (typeof window.innerWidth === 'number' && window.innerWidth === 0) {
+        const getInnerW = function() { return window.innerWidth || targetW; };
+        makeNative(getInnerW, 'get innerWidth');
+        Object.defineProperty(window, 'innerWidth', { get: getInnerW, configurable: true });
 
-      const getOuterH = function() { return targetH - 40; };
-      makeNative(getOuterH, 'get outerHeight');
-      Object.defineProperty(window, 'outerHeight', { get: getOuterH, configurable: true });
+        const getInnerH = function() { return window.innerHeight || (targetH - 85); };
+        makeNative(getInnerH, 'get innerHeight');
+        Object.defineProperty(window, 'innerHeight', { get: getInnerH, configurable: true });
 
-      const getInnerW = function() { return targetW; };
-      makeNative(getInnerW, 'get innerWidth');
-      Object.defineProperty(window, 'innerWidth', { get: getInnerW, configurable: true });
+        const getOuterW = function() { return window.outerWidth || targetW; };
+        makeNative(getOuterW, 'get outerWidth');
+        Object.defineProperty(window, 'outerWidth', { get: getOuterW, configurable: true });
 
-      const getInnerH = function() { return targetH - 85; };
-      makeNative(getInnerH, 'get innerHeight');
-      Object.defineProperty(window, 'innerHeight', { get: getInnerH, configurable: true });
+        const getOuterH = function() { return window.outerHeight || (targetH - 40); };
+        makeNative(getOuterH, 'get outerHeight');
+        Object.defineProperty(window, 'outerHeight', { get: getOuterH, configurable: true });
+      }
 
       const dprVal = (targetOSName === 'macOS' || targetOSName === 'iOS') ? 2 : 1;
       const getDpr = function() { return dprVal; };
@@ -1573,7 +1573,7 @@
       const origCreateObjectURL = window.URL.createObjectURL;
       const patchedCreateObjectURL = function(obj) {
         try {
-          if (obj instanceof Blob && (obj.type.includes('javascript') || obj.type === '')) {
+          if (obj instanceof Blob && obj.type && (obj.type === 'application/javascript' || obj.type === 'text/javascript')) {
             const shim = `try {
   const _wNav = self.navigator;
   if (_wNav) {
@@ -1592,7 +1592,7 @@
   }
 } catch(e) {}
 `;
-            const modifiedBlob = new Blob([shim, '\n', obj], { type: obj.type || 'application/javascript' });
+            const modifiedBlob = new Blob([shim, '\n', obj], { type: obj.type });
             return origCreateObjectURL.call(this, modifiedBlob);
           }
         } catch(e) {}

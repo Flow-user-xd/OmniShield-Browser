@@ -59,6 +59,82 @@ def compute_profile_fingerprint_seeds(seed_str):
     }
 
 
+def resolve_and_unpack_extension(ext_path, user_data_dir):
+    """
+    Ensures an extension path points to a valid directory containing manifest.json.
+    Automatically handles:
+    - Direct extension folders with manifest.json.
+    - Subdirectories (dist/, build/, extension/, etc.).
+    - ZIP archives (.zip) extracted into unpacked_extensions.
+    - CRX packages (.crx CRX2/CRX3) extracted into unpacked_extensions.
+    """
+    if not ext_path or not isinstance(ext_path, str):
+        return None
+    ext_path = ext_path.strip()
+    if not os.path.exists(ext_path):
+        return None
+
+    import zipfile, struct, io
+
+    # 1. Unpack CRX or ZIP files
+    if os.path.isfile(ext_path):
+        unpack_base = os.path.join(user_data_dir, 'unpacked_extensions')
+        os.makedirs(unpack_base, exist_ok=True)
+        base_name = "".join(c if c.isalnum() else "_" for c in os.path.splitext(os.path.basename(ext_path))[0])
+        target_dir = os.path.join(unpack_base, base_name)
+
+        try:
+            with open(ext_path, 'rb') as f:
+                header = f.read(16)
+
+            zip_bytes = None
+            if header.startswith(b'Cr24'):
+                # CRX file parsing
+                version = struct.unpack('<I', header[4:8])[0]
+                with open(ext_path, 'rb') as f:
+                    full_data = f.read()
+                if version == 3:
+                    header_len = struct.unpack('<I', full_data[8:12])[0]
+                    zip_offset = 12 + header_len
+                    zip_bytes = io.BytesIO(full_data[zip_offset:])
+                elif version == 2:
+                    pub_len = struct.unpack('<I', full_data[8:12])[0]
+                    sig_len = struct.unpack('<I', full_data[12:16])[0]
+                    zip_offset = 16 + pub_len + sig_len
+                    zip_bytes = io.BytesIO(full_data[zip_offset:])
+            elif header.startswith(b'PK\x03\x04') or ext_path.lower().endswith('.zip'):
+                zip_bytes = ext_path
+
+            if zip_bytes is not None:
+                os.makedirs(target_dir, exist_ok=True)
+                with zipfile.ZipFile(zip_bytes) as zf:
+                    zf.extractall(target_dir)
+                ext_path = target_dir
+        except Exception as ex:
+            print(f"[Stealth Engine] Error unpacking extension archive {ext_path}: {ex}", flush=True)
+            return None
+
+    # 2. Locate directory with manifest.json
+    if os.path.isdir(ext_path):
+        if os.path.exists(os.path.join(ext_path, 'manifest.json')):
+            return ext_path
+
+        for sub in ['dist', 'build', 'extension', 'src']:
+            sub_path = os.path.join(ext_path, sub)
+            if os.path.exists(os.path.join(sub_path, 'manifest.json')):
+                return sub_path
+
+        try:
+            for item in os.listdir(ext_path):
+                sub_path = os.path.join(ext_path, item)
+                if os.path.isdir(sub_path) and os.path.exists(os.path.join(sub_path, 'manifest.json')):
+                    return sub_path
+        except Exception:
+            pass
+
+    return None
+
+
 def prepare_profile_extension(profile_id, user_data_dir, webgl_vendor, webgl_renderer, cpu_cores, memory_gb, timezone_id="", width=1920, height=1080, useragent="", fingerprint_seed=None, locale="", accept_language="", webrtc="Proxy IP"):
     """
     Create a per-profile copy of the OmniShield extension with unique config.js.
@@ -1195,7 +1271,7 @@ async def apply_cdp_stealth(port, target_url, ua_str, width, height, webgl_vendo
                     "screenHeight": height,
                     "positionX": 0,
                     "positionY": 0,
-                    "dontSetVisibleSize": False
+                    "dontSetVisibleSize": True
                 }
             }))
             await ws.recv()
@@ -1381,7 +1457,11 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         port = allocated if allocated else 9222
 
     custom_exts = custom_extensions or []
-    valid_custom_exts = [e.strip() for e in custom_exts if isinstance(e, str) and e.strip() and os.path.exists(e.strip())]
+    valid_custom_exts = []
+    for e in custom_exts:
+        resolved = resolve_and_unpack_extension(e, user_data_dir)
+        if resolved and resolved not in valid_custom_exts:
+            valid_custom_exts.append(resolved)
     all_exts = [ext_dir] + valid_custom_exts
     ext_list_str = ','.join(all_exts)
 
@@ -1394,6 +1474,10 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         f'--load-extension={ext_list_str}',
         '--extension-mime-request-handling=always-prompt-for-install',
         '--enable-extensions',
+        '--disable-blink-features=AutomationControlled',
+        '--silent-debugger-extension-api',
+        '--extensions-on-chrome-urls',
+        '--disable-popup-blocking',
         '--new-window',
         '--no-first-run',
         '--no-default-browser-check',

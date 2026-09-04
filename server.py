@@ -889,15 +889,20 @@ class OmniShieldRequestHandler(SimpleHTTPRequestHandler):
                 h_val = prof.get("resolution", {}).get("height", 1080)
                 ua_val = prof.get("useragent", "")
 
+                from stealth_engine import resolve_and_unpack_extension
                 custom_exts = prof.get("customExtensions") or []
-                valid_custom_exts = [e.strip() for e in custom_exts if isinstance(e, str) and e.strip() and os.path.exists(e.strip())]
+                valid_custom_exts = []
+                for e in custom_exts:
+                    resolved = resolve_and_unpack_extension(e, user_data_dir)
+                    if resolved and resolved not in valid_custom_exts:
+                        valid_custom_exts.append(resolved)
                 all_exts = [ext_dir] + valid_custom_exts
                 ext_list_str = ','.join(all_exts)
 
                 tz_env_line = f"set TZ={px_tz}\r\n" if px_tz else ""
                 lang_flag = f'--lang={px_locale} ' if px_locale else ""
 
-                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
+                bat_content = f'@echo off\r\ntitle OmniShield - {prof.get("name")}\r\necho Starting OmniShield Profile: {prof.get("name")}...\r\n{tz_env_line}start "" "{CHROME_EXEC}" --user-data-dir="{user_data_dir}" --remote-debugging-port=9222 --remote-allow-origins=* --load-extension="{ext_list_str}" --extension-mime-request-handling=always-prompt-for-install --enable-extensions --disable-blink-features=AutomationControlled --silent-debugger-extension-api --extensions-on-chrome-urls --disable-popup-blocking --window-size={w_val},{h_val} --user-agent="{ua_val}" {lang_flag}{px_flag} --no-first-run --no-default-browser-check https://browserleaks.com/canvas\r\n'
                 try:
                     with open(bat_path, 'w', encoding='utf-8') as bf:
                         bf.write(bat_content)

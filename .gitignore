@@ -19,6 +19,7 @@ omnishield.log
 
 # Profiles data (sessions, cookies, cache)
 profiles/
+profiles_data/
 
 # Dependencies & Build artifacts
 node_modules/
