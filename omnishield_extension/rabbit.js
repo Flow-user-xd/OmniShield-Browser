@@ -1,8 +1,11 @@
 /**
  * OmniShield Interactive Cursor Companion: White Rabbit Runner (Browser Page Content Script)
  * - Perfectly compact (~32px width)
- * - Trails comfortably 55px away from the cursor pointer so it never covers buttons or text
- * - Runs towards cursor smoothly with hopping arcs
+ * - Trails comfortably 50px away from the cursor pointer so it never covers buttons or text
+ * - Real bounding forward leap: airborne parabolic flight arc, mid-air surge, landing squash & dust
+ * - Detached ground shadow stays on the ground for authentic 3D leap perspective
+ * - 3x boosted speed with responsive distance acceleration
+ * - Gentle breathing, ear twitches, and nose twitches when stationary
  */
 (function() {
   if (window.top !== window.self) return;
@@ -36,32 +39,35 @@
         position: fixed;
         top: 0;
         left: 0;
-        width: 32px;
-        height: 28px;
+        width: 38px;
+        height: 32px;
         will-change: transform;
         pointer-events: none !important;
         z-index: 2147483647 !important;
-        transform-origin: center bottom;
+        transform-origin: 19px 28px;
       }
       .rabbit-sprite {
-        position: relative;
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        transform-origin: 16px 22px;
+        transform-origin: 19px 26px;
         will-change: transform;
         pointer-events: none !important;
-        filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+        filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
       }
       .rabbit-shadow {
         position: absolute;
         left: 5px;
         bottom: -2px;
-        width: 22px;
-        height: 6px;
-        background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 70%);
+        width: 28px;
+        height: 8px;
+        background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 72%);
         border-radius: 50%;
         transform-origin: center center;
         pointer-events: none;
+        will-change: transform, opacity;
       }
       .rabbit-svg {
         width: 100%;
@@ -71,17 +77,18 @@
       }
       .rabbit-dust {
         position: fixed;
-        width: 4px;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.85);
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.88);
         border-radius: 50%;
         pointer-events: none;
-        box-shadow: 0 0 5px rgba(0, 242, 254, 0.6);
-        animation: rabbitDustFade 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        box-shadow: 0 0 6px rgba(0, 242, 254, 0.7);
+        animation: rabbitDustFade 0.4s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+        z-index: 2147483645;
       }
       @keyframes rabbitDustFade {
-        0% { transform: scale(1) translate(0, 0); opacity: 0.85; }
-        100% { transform: scale(0.2) translate(-8px, -5px); opacity: 0; }
+        0% { transform: scale(1) translate(0, 0); opacity: 0.88; }
+        100% { transform: scale(0.2) translate(var(--dust-vx, -8px), var(--dust-vy, -6px)); opacity: 0; }
       }
       @keyframes rabbitBreathe {
         0%, 100% { transform: scale(1, 1); }
@@ -130,7 +137,7 @@
         font-size: 14px;
         pointer-events: none !important;
         animation: floatHeart 0.65s ease-out forwards;
-        z-index: 2147483647 !important;
+        z-index: 1000000;
         user-select: none;
       }
     `;
@@ -141,11 +148,14 @@
     const tracker = document.createElement('div');
     tracker.className = 'rabbit-tracker';
 
+    const shadow = document.createElement('div');
+    shadow.className = 'rabbit-shadow';
+    shadow.id = 'rabbit-shadow';
+
     const sprite = document.createElement('div');
     sprite.className = 'rabbit-sprite rabbit-idle-breathe';
 
     sprite.innerHTML = `
-      <div class="rabbit-shadow" id="rabbit-shadow"></div>
       <svg class="rabbit-svg" viewBox="0 0 54 48" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="bunnyFur" cx="35%" cy="30%" r="65%">
@@ -189,6 +199,7 @@
       </svg>
     `;
 
+    tracker.appendChild(shadow);
     tracker.appendChild(sprite);
     container.appendChild(tracker);
     (document.body || document.documentElement).appendChild(container);
@@ -204,9 +215,10 @@
     let facing = 1;
     let isRunning = false;
     let hopAngle = 0;
-    let dustCounter = 0;
     let hasMovedCursor = false;
     let hasCollided = false;
+    let currentSpeed = 0;
+    let lastFrameTime = performance.now();
 
     tracker.style.transform = `translate3d(${rabbitX}px, ${rabbitY}px, 0) scaleX(${facing})`;
 
@@ -214,7 +226,7 @@
       const now = performance.now();
       const dt = Math.max(1, now - lastMoveTime);
       const moveDist = Math.hypot(e.clientX - lastMouseX, e.clientY - lastMouseY);
-      mouseSpeed = Math.min(3, moveDist / dt); // pixels per ms
+      mouseSpeed = Math.min(2.5, moveDist / dt);
       lastMouseX = mouseX;
       lastMouseY = mouseY;
       mouseX = e.clientX;
@@ -234,7 +246,6 @@
         sprite.classList.remove('rabbit-collide-boop');
       }, 430);
 
-      // Spawn mini boop heart or sparkle at collision point
       const heart = document.createElement('div');
       heart.className = 'rabbit-boop-heart';
       heart.innerText = Math.random() > 0.4 ? '✨' : '💖';
@@ -244,91 +255,159 @@
       setTimeout(() => heart.remove(), 650);
     }
 
-    function spawnDust(x, y) {
-      if (++dustCounter % 3 !== 0) return;
-      const dust = document.createElement('div');
-      dust.className = 'rabbit-dust';
-      dust.style.left = `${x}px`;
-      dust.style.top = `${y}px`;
-      container.appendChild(dust);
-      setTimeout(() => dust.remove(), 380);
+    function spawnDust(x, y, dir) {
+      const numPuffs = 2;
+      for (let i = 0; i < numPuffs; i++) {
+        const dust = document.createElement('div');
+        dust.className = 'rabbit-dust';
+        dust.style.left = `${x + (i * 4 - 2)}px`;
+        dust.style.top = `${y}px`;
+        const vx = (dir === 1 ? -1 : 1) * (5 + Math.random() * 5);
+        const vy = -(2 + Math.random() * 4);
+        dust.style.setProperty('--dust-vx', `${vx}px`);
+        dust.style.setProperty('--dust-vy', `${vy}px`);
+        container.appendChild(dust);
+        setTimeout(() => dust.remove(), 400);
+      }
     }
 
     const frontEar = sprite.querySelector('#rabbit-front-ear');
     const backEar = sprite.querySelector('#rabbit-back-ear');
     const frontLeg = sprite.querySelector('#rabbit-front-leg');
     const backLeg = sprite.querySelector('#rabbit-back-leg');
-    const shadow = sprite.querySelector('#rabbit-shadow');
+
+    // 3x boosted real leap configuration
+    const maxSpeedBase = 4.2;
+    const minSpeedBase = 1.4;
+    const jumpCadence = 0.125;
+    const jumpHeight = 18;
 
     function loop() {
+      const now = performance.now();
+      const dtMs = Math.min(64, Math.max(4, now - lastFrameTime));
+      lastFrameTime = now;
+      const dtFactor = dtMs / 16.667;
+
       if (hasMovedCursor) {
-        const now = performance.now();
         const timeSinceMove = now - lastMoveTime;
-        const cursorStopped = timeSinceMove > 110; // cursor resting / stopped
+        const cursorStopped = timeSinceMove > 130;
 
         let targetX, targetY;
         if (cursorStopped) {
-          // Cursor has stopped: rabbit rushes in to catch and collide directly with cursor!
           const targetFacing = mouseX >= rabbitX ? 1 : -1;
-          targetX = mouseX - (targetFacing === 1 ? 24 : 8);
+          targetX = mouseX - (targetFacing === 1 ? 24 : 10);
           targetY = mouseY - 14;
         } else {
-          // Cursor is moving: rabbit chases and trails behind cursor with a dynamic distance
-          const trailDist = Math.min(55, Math.max(25, mouseSpeed * 28 + 25));
+          const trailDist = Math.min(48, Math.max(26, mouseSpeed * 6 + 26));
           const dirX = mouseX >= rabbitX ? -1 : 1;
           targetX = mouseX + (dirX * trailDist);
-          targetY = mouseY + 18;
+          targetY = mouseY + 14;
         }
 
         const dx = targetX - rabbitX;
         const dy = targetY - rabbitY;
         const dist = Math.hypot(dx, dy);
 
-        if (dist > 3) {
+        if (dist > 4) {
           isRunning = true;
           sprite.classList.remove('rabbit-idle-breathe');
 
-          // Rush faster when cursor has stopped to collide
-          const maxSpeed = cursorStopped ? 26 : 20;
-          const minSpeed = cursorStopped ? 4.5 : 3.0;
-          const speedFactor = cursorStopped ? 0.24 : 0.14;
-          const speed = Math.min(maxSpeed, Math.max(minSpeed, dist * speedFactor));
-          const ratio = Math.min(1, speed / dist);
+          const maxSpeed = cursorStopped ? maxSpeedBase * 1.15 : maxSpeedBase;
+          const minSpeed = minSpeedBase;
+
+          let desiredSpeed = minSpeed + Math.min(maxSpeed - minSpeed, Math.sqrt(dist) * 0.28);
+          desiredSpeed = Math.min(maxSpeed, Math.max(minSpeed, desiredSpeed));
+
+          const smoothing = Math.min(1, 0.12 * dtFactor);
+          currentSpeed += (desiredSpeed - currentSpeed) * smoothing;
+          currentSpeed = Math.min(maxSpeed, Math.max(minSpeed, currentSpeed));
+
+          const speedRatio = currentSpeed / maxSpeed;
+          const cadence = jumpCadence * (0.85 + speedRatio * 0.35) * dtFactor;
+          const prevHopAngle = hopAngle;
+          hopAngle = (hopAngle + cadence) % (Math.PI * 2);
+
+          const isAirborne = hopAngle < Math.PI;
+          let hopY = 0;
+          let forwardSurge = 1.0;
+          let bodyScaleX = 1.0;
+          let bodyScaleY = 1.0;
+          let bodyTilt = 0;
+          let earAngle = 0;
+          let shadowScale = 1.0;
+          let shadowOpacity = 0.6;
+          let squashProgress = 0;
+
+          if (isAirborne) {
+            const flightProgress = hopAngle / Math.PI;
+            const arcSin = Math.sin(hopAngle);
+            const peakHeight = jumpHeight * (0.8 + speedRatio * 0.35);
+            hopY = -arcSin * peakHeight;
+
+            forwardSurge = 1.0 + (arcSin * 0.7);
+            bodyScaleX = 1.0 + (arcSin * 0.22);
+            bodyScaleY = 1.0 - (arcSin * 0.16);
+            earAngle = -16 - (arcSin * 10);
+            bodyTilt = (0.5 - flightProgress) * 16;
+            shadowScale = Math.max(0.42, 1.0 - (arcSin * 0.52));
+            shadowOpacity = Math.max(0.2, 0.6 - (arcSin * 0.38));
+          } else {
+            const contactProgress = (hopAngle - Math.PI) / Math.PI;
+            squashProgress = Math.sin(contactProgress * Math.PI);
+
+            hopY = 0;
+            forwardSurge = Math.max(0.35, 1.0 - (squashProgress * 0.65));
+            bodyScaleX = 1.0 + (squashProgress * 0.22);
+            bodyScaleY = 1.0 - (squashProgress * 0.18);
+            earAngle = squashProgress * 6;
+            bodyTilt = 0;
+            shadowScale = 1.0 + (squashProgress * 0.24);
+            shadowOpacity = 0.65;
+
+            if (prevHopAngle < Math.PI && hopAngle >= Math.PI) {
+              const dustX = rabbitX + (facing === 1 ? 4 : 28);
+              const dustY = rabbitY + 26;
+              spawnDust(dustX, dustY, facing);
+            }
+          }
+
+          const effectiveSpeed = currentSpeed * forwardSurge;
+          const step = Math.min(dist, effectiveSpeed * dtFactor);
+          const ratio = step / dist;
 
           rabbitX += dx * ratio;
           rabbitY += dy * ratio;
 
-          if (Math.abs(dx) > 1.5) {
+          if (Math.abs(dx) > 1.8) {
             facing = dx > 0 ? 1 : -1;
           }
 
-          hopAngle += (cursorStopped ? 0.38 : 0.28);
-          const hopHeight = Math.min(12, dist * 0.2);
-          const hopY = -Math.abs(Math.sin(hopAngle)) * hopHeight;
+          const legCycle = Math.sin(hopAngle);
+          if (frontLeg) {
+            frontLeg.style.transform = isAirborne
+              ? `rotate(${legCycle * 26}deg) translate(${legCycle * 2}px, -1px)`
+              : `rotate(${-squashProgress * 12}deg)`;
+          }
+          if (backLeg) {
+            backLeg.style.transform = isAirborne
+              ? `rotate(${-legCycle * 30}deg) translate(${-legCycle * 2.5}px, 1px)`
+              : `rotate(${squashProgress * 15}deg)`;
+          }
 
-          const hopStretch = 1 + (Math.sin(hopAngle) * 0.12);
-          const hopSquash = 1 - (Math.sin(hopAngle) * 0.08);
-          const tilt = Math.max(-12, Math.min(12, (dy / (Math.abs(dx) + 1)) * 12));
+          if (frontEar) frontEar.style.transform = `rotate(${earAngle}deg)`;
+          if (backEar) backEar.style.transform = `rotate(${earAngle - 3}deg)`;
 
-          const legCycle = Math.sin(hopAngle * 2);
-          if (frontLeg) frontLeg.style.transform = `rotate(${legCycle * 26}deg) translate(${legCycle * 1.5}px, 0)`;
-          if (backLeg) backLeg.style.transform = `rotate(${-legCycle * 28}deg) translate(${-legCycle * 1.5}px, 0)`;
-
-          const earFlap = -14 - Math.sin(hopAngle) * 8;
-          if (frontEar) frontEar.style.transform = `rotate(${earFlap}deg)`;
-          if (backEar) backEar.style.transform = `rotate(${earFlap - 3}deg)`;
-
-          const shadowScale = 1 - (Math.abs(hopY) / hopHeight) * 0.35;
-          if (shadow) shadow.style.transform = `scale(${shadowScale})`;
+          if (shadow) {
+            shadow.style.transform = `scale(${shadowScale})`;
+            shadow.style.opacity = shadowOpacity;
+          }
 
           tracker.style.transform = `translate3d(${rabbitX}px, ${rabbitY}px, 0) scaleX(${facing})`;
-          sprite.style.transform = `translate3d(0, ${hopY}px, 0) rotate(${tilt * facing}deg) scale(${hopStretch}, ${hopSquash})`;
+          sprite.style.transform = `translate3d(0, ${hopY}px, 0) rotate(${bodyTilt}deg) scale(${bodyScaleX}, ${bodyScaleY})`;
 
-          if (Math.abs(hopY) < 2.0) {
-            spawnDust(rabbitX + (facing === 1 ? 6 : 26), rabbitY + 24);
-          }
         } else {
-          // Arrived right at target!
+          currentSpeed = 0;
+          hopAngle = 0;
           if (cursorStopped && !hasCollided) {
             hasCollided = true;
             triggerCollisionBoop();
@@ -344,7 +423,10 @@
             if (backLeg) backLeg.style.transform = 'none';
             if (frontEar) frontEar.style.transform = 'none';
             if (backEar) backEar.style.transform = 'none';
-            if (shadow) shadow.style.transform = 'scale(1)';
+            if (shadow) {
+              shadow.style.transform = 'scale(1)';
+              shadow.style.opacity = '0.6';
+            }
             sprite.style.transform = 'none';
           }
 

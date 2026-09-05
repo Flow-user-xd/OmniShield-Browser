@@ -1625,7 +1625,6 @@ def launch_stealth_profile(profile_id, name, width, height, useragent, proxy_str
         f'--load-extension={ext_list_str}',
         '--extension-mime-request-handling=always-prompt-for-install',
         '--enable-extensions',
-        '--disable-blink-features=AutomationControlled',
         '--silent-debugger-extension-api',
         '--no-first-run',
         '--no-default-browser-check',
